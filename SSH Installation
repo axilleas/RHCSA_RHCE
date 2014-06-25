@@ -1,1 +1,36 @@
-## openSSH installation/configure 
+#~#~# sshd installation/configuration #~#~#
+
+
+## Check if ssh is installed
+
+  rpm -q sshd
+
+  
+## If not installed, search if needed, and install
+
+  yum search openssh
+  yum install -y openssh-server
+
+    
+## Check service status start if needed
+  
+  service sshd status
+  or /etc/init.d/sshd status
+  
+  service sshd start
+  or /etc/init.d/sshd start
+
+  
+## Start sshd service on boot 
+  
+  chkconfig sshd on
+  /sbin/chkconfig sshd on
+  
+## Check port 22 to ensure it's open
+  
+  netstat -tulpn |grep 22
+  or ss -tulpn |grep 22
+
+
+  
+  
