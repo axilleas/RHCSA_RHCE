@@ -3,7 +3,7 @@
 
 ## Check if ssh is installed
 
-  rpm -q sshd
+  rpm -qa |grep sshd
 
   
 ## If not installed, search if needed, and install
@@ -25,6 +25,10 @@
   
   chkconfig sshd on
   /sbin/chkconfig sshd on
+
+## Check to make sure it will start for correct run level
+
+	chkconfig --list vncserver
   
 ## Check port 22 to ensure it's open
   
