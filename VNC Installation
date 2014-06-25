@@ -1,0 +1,61 @@
+#-#-# vnc installation/configuration #-#-#
+
+
+## Check if vnc is installed
+
+  rpm -qa |grep vnc
+  
+  
+## If not installed, search if needed, and install
+
+  yum search tigervnc
+  yum intall -y tigervnc-server
+  
+
+## Edit server configuration file - /etc/sysconfig/vncservers
+
+  VNCSERVERS="1:etheredge 2:larry 3:moe"
+  VNCSERVERARGS[1]="-geometry 1024x768 -nolisten tcp -localhost"
+  VNCSERVERARGS[2]="-geometry 800x600 -nolisten tcp -localhost"
+  VNCSERVERARGS[3]="-geometry 800x600 -nolisten tcp -localhost"
+  
+
+## Set users' VNC password
+
+  su - userName
+  vncpasswd
+  
+    ## Check for passwd file in users' home/userName/.vnc folder
+    
+    ls /home/userName/.vnc
+      passwd
+
+
+## Add rule to ip tables
+
+  -A INPUT -m state --state NEW -m tcp -p tcp -m multiport --dports 5901:5903,6001:6003 -j ACCEPT
+
+
+## Check service status start if needed
+
+  service vncserver status
+  or /etc/init.d/vncserver status
+  
+  service vncserver start
+  or /etc/init.d/vncserver start
+
+
+## Start servce on boot
+
+  chkconfign vncserver on
+  or /sbin/chkconfig vncserver on
+  
+
+## Check to make sure it will start for correct run level
+
+  chkconfig --list vncserver
+  or /sbin/chkconfig --list vncserver
+
+
+~
+~
