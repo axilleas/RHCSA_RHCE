@@ -1,0 +1,246 @@
+#~#~# Understand and Use Essential Tools #~#~#
+_____________________________________________________________________
+
+	Access a shell prompt and issue commands with correct syntax.
+_____________________________________________________________________
+
+		Access From Boot via Single User Mode
+			- GRUB Spash Screen
+				- Press any key to enter the GRUB interactive menu.
+				- Select the version of the kernel you would like to boot and type 'a', to append to the line
+				- Go to the end of the line and enter 'single'
+				- Press 'enter' to exit the edit mode
+			- During an X session (GUI)
+				- Open a terminal via one of the terminal applications
+				- CTRL+FX (F1 - F6)
+					- Virtual Teletype Terminal
+
+_____________________________________________________________________
+
+	Use input-output redirection (>, >>, |, 2>, etc.).
+_____________________________________________________________________
+
+		Input/Output Redirect Options
+			> - Create file, or overwrite file if already existst
+					echo 'redirect test 1' > redirectTest
+					cat redirectTest
+						redirect test 1
+					echo 'redirect test 2' > redirectTest
+					cat redirectTest
+						redirect test 2
+			>> - Create file, or append file if already exists
+					echo 'redirect test 1' >> redirectTest
+					cat redirectTest
+						redirect test 1
+					echo 'redirect test 2' >> redirectTest
+					cat redirectTest
+						redirect test 1
+						redirect test 2
+
+			| - Uses the output of one command, for the input of another
+					[root@RHCE_VM ~]# cat /etc/passwd | grep moe
+						moe:x:502:502::/home/moe:/bin/bash
+
+					This example takes the output of 'cat /etc/passwd', which is a list of users on the system, and uses it for input for the grep command, which then locates the user moe and outputs only his line. 
+
+		Two Basic Forms of Output
+
+			Standard Output - Normal output of a command on the screen
+					echo 'This is an example of standard output'
+						This is an exampl of standard output
+
+			Standard Error - Contains errors that occur when the program runs that do 	  not get sent to standard output
+					[root@RHCE_VM ~]# fakeCommand
+						-bash: fakeCommand: command not found (<-- This is the Standard Error Output)
+
+			1> - Standard Output to a file, over writes if exists
+			2> - Standard Error to a file, over writes if exists
+			&> - Both Standard Output, and Error to a file, over writes if exists
+
+			1>>, 2>>, &>> - Same as above, however appends if exists instead of over 	writing
+
+_____________________________________________________________________
+
+	Use grep and regular expressions to analyze text.
+_____________________________________________________________________
+
+		grep - Uses regular expressions
+		egrep - Uses extended regular expressions
+					This is the same as using: grep -E
+		fgrep - Turns off regular expressions, and searches via simple string
+					This is the same as using: grep -F
+
+		Regular Expressions
+
+			Nice quick overview, and basic eamples
+				http://www.petefreitag.com/cheatsheets/regex/
+			
+			Basic
+				^ - Must be found only in beginning of the line
+				. - any char except new line char
+				\ - negates special chars such as . or $ 
+				$ - must be found at the end of the line 
+				[] - any one of the enclosed chars
+				* - repition operators, match preceding sub expression 
+
+			Extended
+				+ - repitition operator
+				? - matches 0 or one occurrence of the preceding char
+				| - OR operator
+				() - contian a subexpression
+				{} - spcifies one or more number of a preceding charv
+
+_____________________________________________________________________
+
+	Access remote systems using ssh and VNC.
+_____________________________________________________________________
+
+		ssh - (Secure Shell) terminal remote access
+			ports used - 22
+			basic syntax - ssh 192.168.1.1
+			specified user - user@192.168.1.1
+		vnc - (Virtual Network Computing) graphical remote access
+			ports used - 5900-590x
+			Connect to vncserver via vnc client programs
+				Tiger VNC Viewer (vncviewer)
+				Vino
+_____________________________________________________________________
+
+	Log in and switch users in multiuser runlevels.
+_____________________________________________________________________
+
+	Switch users
+		su userName
+		su - userName 
+			switches to userName
+		su
+		su -
+			switches to root user
+
+	Run Levels
+		runlevel - see which runlevel you are currently in
+
+		Levels 
+			0 - Halt - Immediately shuts down system and powers off
+			1 - Single User - Bare essentials mode for maint
+			2 - User-defined - Custom
+			3 - Multi-user w/ console only - All services except X11(GUI)
+			4 - User-defined - Custom
+			5 - Multi-user w/ display and console - All services
+			6 - Reboot
+
+		init x - changes run level 
+
+		/etc/rc.d - contains the runlevel definitions
+			# ls /etc/rc.d
+				init.d  rc0.d  rc2.d  rc4.d  rc6.d     rc.sysinit
+				rc      rc1.d  rc3.d  rc5.d  rc.local
+
+_____________________________________________________________________
+
+	Archive, compress, unpack, and uncompress files using tar, star, gzip, and bzip2.
+_____________________________________________________________________
+
+	Create large file to test with
+		dd if=/dev/urandom of=largefile bs=10M count=1
+	Check file size
+		ls -liah
+			393380 -rw-r--r--.  1 root root  10M Jun 26 03:10 largefile
+
+	Archives - Not compressed 
+		tar cvf largefile.tar largefile
+			c - create
+			v - verbose
+			f - file
+	
+	Compress Archives
+		gzip - tar cvzf largefile.tar.gz largefile
+		bzip2 - tar cvjf
+
+	Uncompress Archives
+		gzip - tar xzvf largefile.tar.gz
+		bzip2 - tar xjvf largefile.tbz2
+
+_____________________________________________________________________
+
+	Create and edit text files.
+_____________________________________________________________________
+
+	vim testFile
+		Creates the file if it does not exists and opens the file in the vim text editor
+
+	Other Text Editors
+		vi
+		nano
+
+_____________________________________________________________________
+
+	Create, delete, copy, and move files and directories.
+_____________________________________________________________________
+
+	New  
+		touch newFile
+		mkdir newDir
+	
+	Delete
+		File
+			rm fileName
+		Empty Directory
+			rmdir dirName
+		Directory w/ Content
+			rm -r dirName
+		File/Directory w/o Confirmation
+			rm -rf testDir
+
+	Copy
+		cp fileName1 fileName2
+		cp -r copyDir copyDir2
+			copies contents of directory recursivly 
+
+	Move - Also used as rename
+		mv fileName1 fileName2
+
+
+_____________________________________________________________________
+
+	Create hard and soft links.
+_____________________________________________________________________
+
+	Soft Link - Symbolic Links
+		ln -s fileName softLinkFileName
+		
+			-Indirect link to files
+			-If orig file is deleted, soft links will no longer function
+			-Can be created across file systems
+			-Can link to directories
+			-Can link to files that don't actually exist
+
+	Hard Link
+		ln fileName hardLinkFileName
+
+			-Direct link to file
+			-Contains fileName and the inode number of the file to which it links
+			-Any changes made to hard link, are also made to the original file. 
+			-Same permission as original file.
+			-Even if the original file is deleted, the hard link will still provide access to the data in the file
+			-To delete a file completely, you need to delete the file itself, and all the hard links attached to it.
+
+_____________________________________________________________________
+
+List, set, and change standard ugo/rwx permissions.
+_____________________________________________________________________
+
+
+
+_____________________________________________________________________
+
+	Locate, read, and use system documentation including man, info, and files in /usr/share/doc.
+_____________________________________________________________________
+
+
+
+
+
+
+
+	Note: Red Hat may use applications during the exam that are not included in Red Hat Enterprise Linux for the purpose of evaluating candidate’s abilities to meet this objective.
