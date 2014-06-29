@@ -230,7 +230,25 @@ _____________________________________________________________________
 List, set, and change standard ugo/rwx permissions.
 _____________________________________________________________________
 
+	chmod - Change file or directory permissions
 
+		Numeric Values -
+			chmod 777 fileName - gives full permissions to everyone
+				  UGO < -- User who owns file, Group, Other	
+				4 - read access
+				2 - write access
+				1 - execute access
+		
+		Symbolic Values -
+			chmod ugo|+-=|rwx fileName
+				chmod u+rwx fileName - Gives full permissions to owner of the file
+
+				u - file owner
+				g - group 
+				o - other
+				+ - adds permissions
+				- - removes permissions
+				= - sets permissions exactly
 
 _____________________________________________________________________
 
