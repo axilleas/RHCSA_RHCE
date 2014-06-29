@@ -287,12 +287,12 @@ _____________________________________________________________________
 				find /usr -links 15
 			-type - files of a certain type
 				find path -type	b - block-special devices
-								c - character-special devices
-								d - directories
-								p - named pipes
-								f - ordinary files
-								l - symbolic links
-								s - sockets
+				c - character-special devices
+				d - directories
+				p - named pipes
+				f - ordinary files
+				l - symbolic links
+				s - sockets
 								
 	locate 
 		locate searchString
