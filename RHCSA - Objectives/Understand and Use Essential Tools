@@ -250,15 +250,68 @@ _____________________________________________________________________
 				- - removes permissions
 				= - sets permissions exactly
 
+	chown - changes owner and group of file
+		chown newOwner.newGroup fileName
+		must be root
+
+	chgrp - changes group for file
+		chgrp newGroup fileName
+		Must be owner of file and part of the group in which you are moving it to, or root
+	
+	Immutable file - can't be changed or deleted by any user
+		while this is set, even root cannot delete this file
+
+		chattr +i filepath - set file to immutable
+		chattr -i filepath - remove immutable flag from file	
+
 _____________________________________________________________________
 
 	Locate, read, and use system documentation including man, info, and files in /usr/share/doc.
 _____________________________________________________________________
 
+	whereis - shows the location oc a commapn
+
+	which - shows which version of the command will be run
+
+    whatis - shows a brief description of a command
+	
+	apropos - finds relative documentation and man pages for a command
+	
+	find 
+		find path expression
+			-name - locates file names and can use reg exp as long as contained within ''
+				find / -name '*.png'
+			-size - finds files approx close to the specified size
+				find /usr -size 200k
+			-links - search for files w/ a certain amount of links
+				find /usr -links 15
+			-type - files of a certain type
+				find path -type	b - block-special devices
+								c - character-special devices
+								d - directories
+								p - named pipes
+								f - ordinary files
+								l - symbolic links
+								s - sockets
+								
+	locate 
+		locate searchString
+			-d - specifies the path that the locate db should run on
+				locate --database=databasefile searchString
+			-q - Quiet mode, stop display of error messages
+			-i - case insensitive
+		slocate - takes permissions into account
+			users only access files they have legit access too
+		updatedb - updates the db for locate
+			updatedb --netpaths='netPath1 netPath2'....
+			-f directories - excludes from the update process
+			--output=new database - changes destination db
+			-U - Update the slocate db
+			-f - exclude dir
+			-v - verbose
+	
+	
 
 
 
 
-
-
-	Note: Red Hat may use applications during the exam that are not included in Red Hat Enterprise Linux for the purpose of evaluating candidate’s abilities to meet this objective.
