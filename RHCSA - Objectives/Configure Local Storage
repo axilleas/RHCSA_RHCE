@@ -1,0 +1,69 @@
+#~#~# Configure Local Storage #~#~#
+
+_____________________________________________________________________
+
+	List, create, delete, and set partition type for primary, extended, and logical partitions.
+_____________________________________________________________________
+
+	Show current partitions
+
+		All Drives
+			parted -l
+			or 
+			fdisk -l 
+		Single device or block
+			parted /dev/sdx p
+			or 
+			fdisk -l /dev/sdx
+
+	Create Partition
+
+		fdisk /dev/sdx
+			   a   toggle a bootable flag
+			   b   edit bsd disklabel
+			   c   toggle the dos compatibility flag
+			   d   delete a partition
+			   l   list known partition types
+			   m   print this menu
+			   n   add a new partition
+			   o   create a new empty DOS partition table
+			   p   print the partition table
+			   q   quit without saving changes
+			   s   create a new empty Sun disklabel
+			   t   change a partition's system id
+			   u   change display/entry units
+			   v   verify the partition table
+			   w   write table to disk and exit
+			   x   extra functionality (experts only)
+
+_____________________________________________________________________
+
+	Create and remove physical volumes, assign physical volumes to volume groups, and create and delete logical Volumes.
+_____________________________________________________________________
+
+	Physical Volumes 
+
+		pvscan - scan all disks for physical volumes
+
+		pvdisplay - Display attributes of physical volumes
+		
+		pvcreate - Create physical volume
+			pvcreate /dev/sdx
+
+		pvchange - change attributes of a physical volume such as size
+
+
+
+
+_____________________________________________________________________
+
+	Create and configure LUKS-encrypted partitions and logical volumes to prompt for password and mount a decrypted file system at boot.
+_____________________________________________________________________
+_____________________________________________________________________
+
+	Configure systems to mount file systems at boot by Universally Unique ID (UUID) or label.
+_____________________________________________________________________
+_____________________________________________________________________
+
+	Add new partitions and logical volumes, and swap to a system non-destructively.
+_____________________________________________________________________
