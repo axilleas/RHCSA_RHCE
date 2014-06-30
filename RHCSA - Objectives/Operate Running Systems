@@ -1,0 +1,158 @@
+#~#~# Operate running systems #~#~#
+
+_____________________________________________________________________
+	
+	Boot, reboot, and shut down a system normally.
+_____________________________________________________________________
+
+	Restart System - immediate
+		shutdown -r now
+		or
+		reboot
+		or
+		init 6
+
+	Restart System - with message
+		shutdown -r +10 'System will reboot in 10 minutes'
+
+	Shutdown - with message
+		shutdown -h +5 'System will shut down in 5 minutes'
+		or
+		init 0
+_____________________________________________________________________
+
+	Boot systems into different runlevels manually.
+_____________________________________________________________________
+
+
+		
+		Run levels
+
+		runlevel - see which runlevel you are currently in
+
+		Levels 
+			0 - Halt - Immediately shuts down system and powers off
+			1 - Single User - Bare essentials mode for maint
+			2 - User-defined - Custom
+			3 - Multi-user w/ console only - All services except X11(GUI)
+			4 - User-defined - Custom
+			5 - Multi-user w/ display and console - All services
+			6 - Reboot
+
+		Show which services start with each level
+
+			Complete list of services
+				chkconfig
+
+			Single service
+				chkconfig --list sshd
+
+			Start/Stop service on selected run level
+				chkconfig --level X service on/off
+
+		init x - changes run level 
+
+		Change Default Run Level 
+			vim /etc/inittab
+
+			(Change X to the default run level you would like)
+			id:X:initdefault:
+
+_____________________________________________________________________
+
+	Use single-user mode to gain access to a system.
+_____________________________________________________________________
+
+	Access From Boot via Single User Mode
+	- GRUB Spash Screen
+		- Press any key to enter the GRUB interactive menu.
+		- Select the version of the kernel you would like to boot and type 'a', to append to the line
+		- Go to the end of the line and enter 'single'
+		- Press 'enter' to exit the edit mode
+_____________________________________________________________________
+
+	Identify CPU/memory intensive processes, adjust process priority with renice, and kill processes.
+_____________________________________________________________________
+
+	top - Shows running list of procress' with resource usage and PID's 
+		r - change the nice value of PID
+		k - kill pid
+
+	renice - change the priority of a process
+			-20 - highest priority
+			19 - lowest priority
+
+			renice -20 12345
+						^-PID		
+
+	ps -
+		a and -a - all processes even other users
+		e - details of the shell env
+		f - shows parent child relations, in tree form
+		-l - more detailed listing of procs
+		u - username and start time
+		x - lists procs w/o associated terminals
+
+	jobs - shows running applications in foreground or bg
+		-l - Name of jobs along w/ PID
+		-r - list of currently running jobs
+		-s - List of stopped jobs
+
+	kill -
+		-1 or SIGHUP
+			stop and restart process
+		-9 or SIGKILL
+			kills process that refuses to terminate
+		-15 or SIGTERM
+			politely kills a process and allows it to exit
+		-18 or SIGCONT
+			continue suspended process
+		-19 or SIGSTOP
+			suspend a process
+		-20 or SIGTSTP
+			suspends process like CTRL-Z
+_____________________________________________________________________
+
+	Locate and interpret system log files.
+_____________________________________________________________________
+	
+	Useful Logs
+		/var/log/boot.log
+			Shows boot log for last bootup
+		/var/log/cron
+			Shows list of cron jobs that have ran and when
+		/var/log/messages
+			Shows different error messages from programs 
+		/var/log/yum.log
+			Log of installed packages via yum
+		/var/log/secure
+			Access attempts and failures to the server, such as sshd, or invalid user passwords via su
+		/var/log/lastlog
+			Shows last active connection
+		/var/log/http/
+			Httpd logs for who has access the httpd server
+
+
+_____________________________________________________________________
+
+	Access a virtual machine’s console.
+_____________________________________________________________________
+
+	KVM Installation - Vitrual Machine Manager
+		yum install -y qemu-kvm
+			python-virtinst
+			virt-manager
+			virt-top
+_____________________________________________________________________
+
+	Start and stop virtual machines.
+_____________________________________________________________________
+
+_____________________________________________________________________
+
+	Start, stop, and check the status of network services.
+_____________________________________________________________________
+
+	service serviceName status/start/stop/restart
+
+	etc/init.d/serviceName status/start/stop/restart

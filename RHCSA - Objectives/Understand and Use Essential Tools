@@ -10,7 +10,8 @@ _____________________________________________________________________
 				- Select the version of the kernel you would like to boot and type 'a', to append to the line
 				- Go to the end of the line and enter 'single'
 				- Press 'enter' to exit the edit mode
-			- During an X session (GUI)
+		
+		During an X session (GUI)
 				- Open a terminal via one of the terminal applications
 				- CTRL+FX (F1 - F6)
 					- Virtual Teletype Terminal
