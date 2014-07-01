@@ -41,24 +41,93 @@ _____________________________________________________________________
 	Create and remove physical volumes, assign physical volumes to volume groups, and create and delete logical Volumes.
 _____________________________________________________________________
 
+	Basic Layout 
+
+		Mount Point				Mount Point
+		Logical Volume 			Logical Volume
+		|						|
+		------------Volume Group---------
+		|				|				|
+		Physical 		Physical 		Physical
+		Volume 			Volume 			Volume 
+		/dev/sdb		/dev/sdc		/dev/sdd
+
+
 	Physical Volumes 
 
-		pvscan - scan all disks for physical volumes
+		pvs - List all physical volumes
+
+		pvscan - Scan all disks for physical volumes
 
 		pvdisplay - Display attributes of physical volumes
 		
 		pvcreate - Create physical volume
-			pvcreate /dev/sdx
 
-		pvchange - change attributes of a physical volume such as size
+		pvchange - Change attributes of a physical volume
+
+		pvremove - Delete a physical volume
 
 
+	Volume Group - configure files in /etc/lvm
 
+		vgscan - scan all disks for volume groups
+
+		vgdisplay - Display attributes of volume groups
+
+		vgextend - extend volume group
+
+		vgreduce - remove a single pv 
+
+	
+	Logical Volume 
+
+		lvcreate - create logical volume within a volume group
+
+		lvremove - remove logical volume (must not be mounted)
+
+		lvextend - extend logical volume
+
+		lvreduce - reduce the size of logical volume
+
+
+	Basic Setup - 
+		
+		pvcreate /dev/sdb
+		pvcreate /dev/sdc
+		pvcreate /dev/sdd
+		pvcreate /dev/sde
+
+			vgcreate vg1 /dev/sdb /dev/sdc
+			vgcreate vg2 /dev/sdd /dev/sde
+
+				lvcreate -l 100%FREE -n lv1 vg1
+				lvcreate -l 100%FREE -n lv2 vg2
+
+					mkfs.ext4 /dev/vg1/lv1
+					mkfs.ext4 /dev/vg2/lv2
+
+						mount /dev/vg1/lv1 /mnt/lv1
+						mount /dev/vg2/lv2 /mnt/lv2
 
 _____________________________________________________________________
 
 	Create and configure LUKS-encrypted partitions and logical volumes to prompt for password and mount a decrypted file system at boot.
 _____________________________________________________________________
+
+	cryptsetup luksFormat /dev/sdb
+	
+	cryptsetup luksUUID /dev/sdb
+	cryptsetup luksOpen /dev/sdb(UUID from previous command)
+	or
+	cryptsetup luksUUID /dev/sdb
+	cryptsetup luksOpen /dev/sdb newName
+
+	mkfs.ex4 /dev/mapper/(UUID or newName)
+	mount /dev/mapper/(UUID or newName) /mnt/encryptDir
+	
+
+
+
 _____________________________________________________________________
 
 	Configure systems to mount file systems at boot by Universally Unique ID (UUID) or label.
