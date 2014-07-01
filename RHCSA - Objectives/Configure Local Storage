@@ -125,6 +125,10 @@ _____________________________________________________________________
 	mkfs.ex4 /dev/mapper/(UUID or newName)
 	mount /dev/mapper/(UUID or newName) /mnt/encryptDir
 	
+	vim /etc/fstab
+		/dev/mapper/secret		/mnt/secret		ext4		defaults		1 2 
+
+		
 
 
 

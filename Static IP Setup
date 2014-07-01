@@ -1,35 +1,70 @@
-## Disable Network Manager
-	
+#~#~# Static IP Setup #~#~#
+
+_____________________________________________________________________
+
+Disable Network Manager
+_____________________________________________________________________
+
+	service NetworkManager stop
 	/sbin/service NetworkManager stop
+
+	chkconfig NetworkManager off
 	/sbin/chkconfig NetworkManager off
 
-## Enable network service to start on boot
+_____________________________________________________________________
 
+Check Service Status Start If Needed
+_____________________________________________________________________
+
+	service network status
+  	/etc/init.d/network status
+
+	service network start
+  	/etc/init.d/network start
+
+_____________________________________________________________________
+
+Start Service On Boot
+_____________________________________________________________________
+	
+	chkconfig network on
 	/sbin/chkconfig network on
 
+_____________________________________________________________________
 
-## vi /etc/sysconfig/network-scripts/ifcfg-eth0
+Setup Ethernet Device With IP Information
+_____________________________________________________________________
 
-	DEVICE="eth0"
-	NM_CONTROLLED=no
-	ONBOOT=yes
-	HWADDR=A4:BA:DB:37:F1:04
-	TYPE=Ethernet
-	BOOTPROTO=static
-	NAME="System eth0"
-	UUID=5fb06bd0-0bb0-7ffb-45f1-d6edd65f3e03
-	IPADDR=192.168.1.44
-	NETMASK=255.255.255.0
-	DNS1=8.8.8.8
-	DNS2=8.8.4.4
+	vim /etc/sysconfig/network-scripts/ifcfg-eth0
 
-## vi /etc/sysconfig/network
+		DEVICE="eth0"
+		NM_CONTROLLED=no
+		ONBOOT=yes
+		HWADDR=A4:BA:DB:37:F1:04
+		TYPE=Ethernet
+		BOOTPROTO=static
+		NAME="System eth0"
+		UUID=5fb06bd0-0bb0-7ffb-45f1-d6edd65f3e03
+		IPADDR=192.168.1.44
+		NETMASK=255.255.255.0
+		DNS1=8.8.8.8
+		DNS2=8.8.4.4
 
-	NETWORKING=yes
-	HOSTNAME=hostName
-	GATEWAY=192.168.1.1
+_____________________________________________________________________
 
-## Start/Restart Networking Service
-	
+Setup Hostname And Gateway
+_____________________________________________________________________
+
+	vim /etc/sysconfig/network
+
+		NETWORKING=yes
+		HOSTNAME=hostName
+		GATEWAY=192.168.1.1
+
+_____________________________________________________________________
+
+Start/Restart Networking Service
+_____________________________________________________________________
+
 	service network restart
 	/etc/init.d/network restart
