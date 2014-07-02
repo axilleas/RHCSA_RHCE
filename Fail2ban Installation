@@ -2,7 +2,7 @@
 
 _____________________________________________________________________
 
-Download the EPEL repository
+Download The EPEL Repository
 _____________________________________________________________________
 
 	rpm -Uvh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm

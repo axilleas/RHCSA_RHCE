@@ -103,11 +103,11 @@ _____________________________________________________________________
 				lvcreate -l 100%FREE -n lv1 vg1
 				lvcreate -l 100%FREE -n lv2 vg2
 
-					mkfs.ext4 /dev/vg1/lv1
-					mkfs.ext4 /dev/vg2/lv2
+					mke2fs -t ext4 /dev/vg1/lv1
+					mke2fs -t ext4 /dev/vg2/lv2
 
-						mount /dev/vg1/lv1 /mnt/lv1
-						mount /dev/vg2/lv2 /mnt/lv2
+						mount -t ext4 /dev/vg1/lv1 /mnt/lv1
+						mount -t ext4 /dev/vg2/lv2 /mnt/lv2
 
 _____________________________________________________________________
 
@@ -122,20 +122,37 @@ _____________________________________________________________________
 	cryptsetup luksUUID /dev/sdb
 	cryptsetup luksOpen /dev/sdb newName
 
-	mkfs.ex4 /dev/mapper/(UUID or newName)
-	mount /dev/mapper/(UUID or newName) /mnt/encryptDir
+	mke2fs -t ext4 /dev/mapper/(UUID or newName)
+	mount -t ext4 /dev/mapper/(UUID or newName) /mnt/encryptDir
 	
 	vim /etc/fstab
 		/dev/mapper/secret		/mnt/secret		ext4		defaults		1 2 
-
-		
-
-
 
 _____________________________________________________________________
 
 	Configure systems to mount file systems at boot by Universally Unique ID (UUID) or label.
 _____________________________________________________________________
+	
+	Using UUID
+	
+		Find UUID for the device
+			blkid -o list
+
+		Add to fstab
+			vim /etc/fstab
+				UUID=(UUID goes here)	/mnt/mountDirectory		ext4    defaults        0 0 
+
+	Using Label
+
+		Check device for label
+			blkid -o list
+
+		Add label if needed
+			e2label /dev/sdx newLabel
+
+		Add to fstab
+			LABEL=newLabel	/mnt/mountDirectory		ext4    defaults        0 0 			
+
 _____________________________________________________________________
 
 	Add new partitions and logical volumes, and swap to a system non-destructively.
