@@ -73,10 +73,50 @@ _____________________________________________________________________
 
 Configure systems to mount ext4, LUKS-encrypted, and network file systems automatically.
 _____________________________________________________________________
+
+	Persistent Mounting
+
+			Using Path
+
+				Add to fstab
+					vim /etc/fstab
+						/dev/sdx	/mnt/mountDirectory		ext4    defaults        0 0 
+
+			Using UUID
+	
+				Find UUID for the device
+					blkid -o list
+
+				Add to fstab
+					vim /etc/fstab
+						UUID=(UUID goes here)	/mnt/mountDirectory		ext4    defaults        0 0 
+
+			Using Label
+
+				Check device for label
+					blkid -o list
+
+				Add label if needed
+					e2label /dev/sdx newLabel
+
+				Add to fstab
+					LABEL=newLabel	/mnt/mountDirectory		ext4    defaults        0 0 			
 _____________________________________________________________________
 
 Extend existing unencrypted ext4-formatted logical volumes.
 _____________________________________________________________________
+	
+	Create Logical Volume
+		
+		pvcreate /dev/sda
+		pvcreate /dev/adb
+
+			vgcreate vgName1 /dev/sda
+			vgcreate vgName2 /dev/sdb
+
+				lvcreate -l  100%FREE 
+
+
 _____________________________________________________________________
 
 Create and configure set-GID directories for collaboration.
@@ -89,3 +129,37 @@ _____________________________________________________________________
 
 Diagnose and correct file permission problems.
 _____________________________________________________________________
+
+	chmod - Change file or directory permissions
+
+		Numeric Values -
+			chmod 777 fileName - gives full permissions to everyone
+				  UGO < -- User who owns file, Group, Other	
+				4 - read access
+				2 - write access
+				1 - execute access
+		
+		Symbolic Values -
+			chmod ugo|+-=|rwx fileName
+				chmod u+rwx fileName - Gives full permissions to owner of the file
+
+				u - file owner
+				g - group 
+				o - other
+				+ - adds permissions
+				- - removes permissions
+				= - sets permissions exactly
+
+	chown - changes owner and group of file
+		chown newOwner.newGroup fileName
+		must be root
+
+	chgrp - changes group for file
+		chgrp newGroup fileName
+		Must be owner of file and part of the group in which you are moving it to, or root
+	
+	Immutable file - can't be changed or deleted by any user
+		while this is set, even root cannot delete this file
+
+		chattr +i filepath - set file to immutable
+		chattr -i filepath - remove immutable flag from file	
