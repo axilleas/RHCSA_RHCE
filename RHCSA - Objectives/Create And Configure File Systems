@@ -1,0 +1,91 @@
+#~#~# Create and configure file systems #~#~#
+
+
+_____________________________________________________________________
+
+Create, mount, unmount, and use ext2, ext3, and ext4 file systems.
+_____________________________________________________________________
+
+	Create ext2, ext3, ext4
+		mke2fs -t ext2,3,4 /dev/sdx
+		
+	Non-Persistent Mounting
+	
+		mount /dev/sdx /mnt/mountDirectory
+
+	Persistent Mounting
+
+			Using Path
+
+				Add to fstab
+					vim /etc/fstab
+						/dev/sdx	/mnt/mountDirectory		ext4    defaults        0 0 
+
+			Using UUID
+	
+				Find UUID for the device
+					blkid -o list
+
+				Add to fstab
+					vim /etc/fstab
+						UUID=(UUID goes here)	/mnt/mountDirectory		ext4    defaults        0 0 
+
+			Using Label
+
+				Check device for label
+					blkid -o list
+
+				Add label if needed
+					e2label /dev/sdx newLabel
+
+				Add to fstab
+					LABEL=newLabel	/mnt/mountDirectory		ext4    defaults        0 0 			
+	
+	Unmount Device
+		umount /mnt/mountDirectory
+
+
+_____________________________________________________________________
+
+Mount, unmount, and use LUKS-encrypted file systems.
+_____________________________________________________________________
+
+	cryptsetup luksFormat /dev/sdb
+	
+	cryptsetup luksUUID /dev/sdb
+	cryptsetup luksOpen /dev/sdb(UUID from previous command)
+	or
+	cryptsetup luksUUID /dev/sdb
+	cryptsetup luksOpen /dev/sdb newName
+
+	mke2fs -t ext4 /dev/mapper/(UUID or newName)
+	mount -t ext4 /dev/mapper/(UUID or newName) /mnt/encryptDir
+	
+	vim /etc/fstab
+		/dev/mapper/secret		/mnt/secret		ext4		defaults		1 2 
+
+
+_____________________________________________________________________
+
+Mount and unmount CIFS and NFS network file systems.
+_____________________________________________________________________
+_____________________________________________________________________
+
+Configure systems to mount ext4, LUKS-encrypted, and network file systems automatically.
+_____________________________________________________________________
+_____________________________________________________________________
+
+Extend existing unencrypted ext4-formatted logical volumes.
+_____________________________________________________________________
+_____________________________________________________________________
+
+Create and configure set-GID directories for collaboration.
+_____________________________________________________________________
+_____________________________________________________________________
+
+Create and manage Access Control Lists (ACLs).
+_____________________________________________________________________
+_____________________________________________________________________
+
+Diagnose and correct file permission problems.
+_____________________________________________________________________
