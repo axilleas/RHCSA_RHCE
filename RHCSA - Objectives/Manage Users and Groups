@@ -1,0 +1,73 @@
+#~#~# Manage users and groups #~#~#
+
+_____________________________________________________________________
+
+Create, delete, and modify local user accounts.
+_____________________________________________________________________
+
+	Add User
+
+		useradd bob
+
+	Add User To Group
+
+		useradd -G wheel bob
+
+	Assign Specific UID/GID
+
+		useradd -u 504 -g 505 bob
+
+	Modify Which Shell To Use
+
+		usermod -s /bin/bash bob
+
+	Modify User To Be In Additional Group
+
+		usermod -a -G newGroup bob
+
+	Change User Password
+
+	 	passwd bob
+
+	Delete User From System
+		( leaves home dir and mail spool )
+
+		userdel bob
+
+	Delete User Completely
+
+		userdel -f bob
+
+_____________________________________________________________________
+
+Change passwords and adjust password aging for local user accounts.
+_____________________________________________________________________
+
+	chage - change user password expiry information
+
+		-m <days> - min days a user must wait before changing password again
+		-M <days> - max days password is valid
+		-d <days> - number of days since January 1, 1970 the password was changed
+		-I <days> - number of inactive days after the password expiration before locking the account
+		-E <date> - date on which the account is locked, in the format YYYY-MM-DD.
+		-W <days> - number of days before the password expiration date to warn the user.
+
+	chage --list username
+
+		Last password change                                    : Jun 23, 2014
+		Password expires                                        : never
+		Password inactive                                       : never
+		Account expires                                         : never
+		Minimum number of days between password change          : 0
+		Maximum number of days between password change          : 99999
+		Number of days of warning before password expires       : 7
+
+_____________________________________________________________________
+
+Create, delete, and modify local groups and group memberships.
+_____________________________________________________________________
+
+_____________________________________________________________________
+
+Configure a system to use an existing LDAP directory service for user and group information.
+_____________________________________________________________________

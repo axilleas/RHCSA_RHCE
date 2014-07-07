@@ -1,0 +1,237 @@
+#~#~# Deploy, Configure, and Maintain Systems #~#~#
+
+_____________________________________________________________________
+
+Configure networking and hostname resolution statically or dynamically.
+Schedule tasks using cron.
+_____________________________________________________________________
+
+	Static IP Setup
+
+		Disable Network Manager
+
+			service NetworkManager stop
+			/sbin/service NetworkManager stop
+
+			chkconfig NetworkManager off
+			/sbin/chkconfig NetworkManager off
+
+
+		Check Service Status Start If Needed
+
+			service network status
+		  	/etc/init.d/network status
+
+			service network start
+		  	/etc/init.d/network start
+
+
+		Start Service On Boot
+			
+			chkconfig network on
+			/sbin/chkconfig network on
+
+
+		Setup Ethernet Device With IP Information
+
+			vim /etc/sysconfig/network-scripts/ifcfg-eth0
+
+				DEVICE="eth0"
+				NM_CONTROLLED=no
+				ONBOOT=yes
+				HWADDR=A4:BA:DB:37:F1:04
+				TYPE=Ethernet
+				BOOTPROTO=static
+				NAME="System eth0"
+				UUID=5fb06bd0-0bb0-7ffb-45f1-d6edd65f3e03
+				IPADDR=192.168.1.44
+				NETMASK=255.255.255.0
+				DNS1=8.8.8.8
+				DNS2=8.8.4.4
+
+
+		Setup Hostname And Gateway
+
+			vim /etc/sysconfig/network
+
+				NETWORKING=yes
+				HOSTNAME=hostName
+				GATEWAY=192.168.1.1
+
+
+		Start/Restart Networking Service
+
+			service network restart
+			/etc/init.d/network restart
+
+	Scheduling Tasks With Cronjobs
+
+		crontab -l - Show list of current user's cronjobs
+		crontab -e - Edit current user's cronjobs
+
+
+		Special Cron Operators
+
+			/ : "steps through" or "skips" a specified units. 	
+				*/3 in the hour field would be
+					12am, 3am, 6am, 9am.... and so on
+			, : List of time for repitition
+				3,9,11
+			- : Range of values
+				2-4 for months would be, Feb, March, April
+
+
+		# Example of job definition:
+		# .---------------- minute (0 - 59)
+		# |  .------------- hour (0 - 23)
+		# |  |  .---------- day of month (1 - 31)
+		# |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+		# |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
+		# |  |  |  |  |
+		# *  *  *  *  * user-name command to be executed
+		  0 12 * * * /bin/echo "some job" >> echo.log
+
+_____________________________________________________________________
+
+Configure systems to boot into a specific runlevel automatically.
+_____________________________________________________________________
+
+		Run levels
+
+		runlevel - see which runlevel you are currently in
+
+		Levels 
+			0 - Halt - Immediately shuts down system and powers off
+			1 - Single User - Bare essentials mode for maint
+			2 - User-defined - Custom
+			3 - Multi-user w/ console only - All services except X11(GUI)
+			4 - User-defined - Custom
+			5 - Multi-user w/ display and console - All services
+			6 - Reboot
+
+		Show which services start with each level
+
+			Complete list of services
+				chkconfig
+
+			Single service
+				chkconfig --list sshd
+
+			Start/Stop service on selected run level
+				chkconfig --level X service on/off
+
+		init x - changes run level 
+
+		Change Default Run Level 
+			vim /etc/inittab
+
+			(Change X to the default run level you would like)
+			id:X:initdefault:
+
+
+_____________________________________________________________________
+
+Install Red Hat Enterprise Linux automatically using Kickstart.
+_____________________________________________________________________
+
+Configure a physical machine to host virtual guests.
+_____________________________________________________________________
+_____________________________________________________________________
+
+Install Red Hat Enterprise Linux systems as virtual guests.
+_____________________________________________________________________
+_____________________________________________________________________
+
+Configure systems to launch virtual machines at boot.
+_____________________________________________________________________
+_____________________________________________________________________
+
+Configure network services to start automatically at boot.
+_____________________________________________________________________
+		
+		Check To See If Service Will Sart On Boot
+
+			chkconfig --list network
+			network         0:off   1:off   2:off    3:off    4:off    5:off    6:off
+
+
+		Start Service On Boot
+			
+			chkconfig network on
+			/sbin/chkconfig network on
+_____________________________________________________________________
+
+Configure a system to run a default configuration HTTP server.
+_____________________________________________________________________
+
+	Check to see if httpd is installed
+
+		rpm -qa | grep httpd
+
+	Install httpd Server
+
+		yum install -y httpd
+
+	Check Service Status Start If Needed
+
+		service httpd status
+		service httpd start
+
+	Start Service On Boot
+
+		chkconfig --list httpd
+		httpd           0:off   1:off   2:off   3:off   4:off   5:off   6:off
+
+		chkconfig httpd on
+		httpd           0:off   1:off   2:on    3:on    4:on    5:on    6:off
+
+	Open Port 80 in iptables
+
+		iptables -A INPUT -p tcp -m tcp --dport 80 -j ACCEPT		
+		service iptables save
+
+_____________________________________________________________________
+
+Configure a system to run a default configuration FTP server.
+_____________________________________________________________________
+
+	Check to see if vftpd is installed
+
+		rpm -qa | grep vsftpd
+
+	Install httpd Server
+
+		yum install -y vsftpd
+
+	Check Service Status Start If Needed
+
+		service vsftpd status
+		service vsftpd start
+
+	Start Service On Boot
+
+		chkconfig --list vsftpd
+		vsftpd           0:off   1:off   2:off   3:off   4:off   5:off   6:off
+
+		chkconfig httpd on
+		vsftpd           0:off   1:off   2:on    3:on    4:on    5:on    6:off
+
+	Open Ports 20 & 21 in iptables
+
+		iptables -A INPUT -p tcp -m tcp --dport 20 -j ACCEPT		
+		iptables -A INPUT -p tcp -m tcp --dport 21 -j ACCEPT		
+		service iptables save
+
+_____________________________________________________________________
+
+Configure a system to use time services.
+_____________________________________________________________________
+_____________________________________________________________________
+
+Install and update software packages from Red Hat Network, a remote repository, or from the local file system.
+_____________________________________________________________________
+_____________________________________________________________________
+
+Update the kernel package appropriately to ensure a bootable system.
+Modify the system bootloader.
+_____________________________________________________________________
