@@ -1,4 +1,4 @@
-#~#~# Manage users and groups #~#~#
+#~#~# Manage Users and Groups #~#~#
 
 _____________________________________________________________________
 
@@ -67,7 +67,36 @@ _____________________________________________________________________
 Create, delete, and modify local groups and group memberships.
 _____________________________________________________________________
 
+	List Groups User Is In
+
+		groups userName
+
+	Add Group
+
+		groupadd newGroup
+
+	Delete Group
+
+		groupdel newGroup
+
+	Modify Group's Name
+
+		groupmod -n newName newGroup
+
+	Modify Group's GID
+
+		groupmod -g 221 newGroup
+
+	Add User To Group
+
+		groupmems -g newGroup -a bob
+
+
 _____________________________________________________________________
 
 Configure a system to use an existing LDAP directory service for user and group information.
 _____________________________________________________________________
+
+	yum -y install openldap-clients system-config-authentication
+
+	system-config-authentication
