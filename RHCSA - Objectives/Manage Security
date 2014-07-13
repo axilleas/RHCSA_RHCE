@@ -8,10 +8,34 @@ _____________________________________________________________________
 
 Set enforcing and permissive modes for SELinux.
 _____________________________________________________________________
+
+	Check Current SELinux Mode
+
+		getenforce
+
+	Set SELinux Mode to 0 (Temporary)
+
+		setenforce 0
+
+	Change Mode Persistently 
+
+		vim /etc/selinux/config
+
+			SELINUX=disabled/permissive/enforcing
+
 _____________________________________________________________________
 
 List and identify SELinux file and process context.
 _____________________________________________________________________
+
+	Process Context
+
+		ps -Z
+
+	File Context
+
+		ls -lZ
+	
 _____________________________________________________________________
 
 Restore default file contexts.

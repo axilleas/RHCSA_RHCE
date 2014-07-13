@@ -125,6 +125,36 @@ _____________________________________________________________________
 
 Create and manage Access Control Lists (ACLs).
 _____________________________________________________________________
+
+	getfacl - Check current ACL for file 
+
+		getfacl /filedir/aclFileTest
+
+				# file: /filedir/aclFileTest
+				# owner: root
+				# group: root
+				user::rwx
+				group::r-x
+				mask::r-x
+				other::r-x
+
+	setfacl - set the ACL for a file 
+
+		setfacl -m - Modift the ACL of a file
+			setfacl -m rules files
+				User ACL -
+					setfacl -m u:userName:rw /fileDir/aclFile
+				Group ACL -
+					setfacl -m g:groupName:rw
+				Default ACL - 
+					setfacl -m d:u/g/o:rwx /filePath/aclDir
+
+
+		setfacl -x - Removes the ACL for user, group, or others
+			setfacl -x rules files
+				setfacl -x u:userName /fileDir/aclFile
+
+
 _____________________________________________________________________
 
 Diagnose and correct file permission problems.
