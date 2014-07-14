@@ -4,6 +4,40 @@ _____________________________________________________________________
 
 Configure firewall settings using system-config-firewall or iptables.
 _____________________________________________________________________
+
+	Check Service Status Start If Needed
+
+		service iptables status
+	  	/etc/init.d/iptables status
+
+		service iptables start
+	  	/etc/init.d/iptables start
+
+	Start Service On Boot
+		
+		chkconfig iptables on
+		/sbin/chkconfig iptables on
+
+	Firewall Chains
+
+		INPUT - Used for packets addressed to the system
+		OUTPUT - Used for packets generate from the system
+		FORWARD - Used when packets are sent through another interface, such as eth0, to eth1 
+		RH-Firewall-1-INPUT - User defined custome chain, used by the INPUT, OUTPUT, and FORWARD chains
+
+	Packet Matching Rules
+
+		1 - Each packet starts at the first rule in chain
+		2 - A packet proceeds until it matches a rule
+		3 - If match is found, then control will jump to specified target (REJECT, ACCEPT, DROP)
+
+	Target Meansings 
+
+		ACCEPT - Allow packet
+		REJECT - Drop packet w/ error message to remote host
+		DROP - Drop packet w/o error message to remote host or sending host 
+
+		
 _____________________________________________________________________
 
 Set enforcing and permissive modes for SELinux.
