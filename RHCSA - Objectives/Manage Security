@@ -78,6 +78,15 @@ _____________________________________________________________________
 
 Use boolean settings to modify system SELinux settings.
 _____________________________________________________________________
+
+	Default SELinux Policies
+
+		getsebool -a 
+			Lists all booleans that are currently set
+
+		
+
+
 _____________________________________________________________________
 
 Diagnose and address routine SELinux policy violations
