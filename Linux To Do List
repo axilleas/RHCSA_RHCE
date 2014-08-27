@@ -1,0 +1,44 @@
+Linux To Do List
+
+Begin SE Linux learning
+
+Begin practice routines and answer sheets
+	
+	User Creation
+	Group Creation
+	Skeleton Records
+	User Rights
+	Group Rights
+	ACL's
+
+	Sudo Privelages
+
+	HDD Configuratoin
+		Logical Volumes
+
+		Partitioning
+		Formating
+
+	Setup Basic Services
+
+		SSH
+			Disable Root 
+		
+		VNC
+			Create User Environments
+		
+		FTP
+			Lock to home directories
+
+		HTTP
+
+
+
+Behin RHCE Study Guide
+
+
+
+Random Things To Learn More About
+
+	stat 
+		ls -l, alternative more verbose

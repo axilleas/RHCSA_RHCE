@@ -1,128 +1,2146 @@
-RHCE Exam objectives - 6/26/14
-
-
-RHCE exam candidates should consult the RHCSA exam objectives and be capable of RHCSA-level tasks, as some of these skills may be required in order to meet RHCE exam objectives. Red Hat reserves the right to add, modify, and remove objectives. Such changes will be made public in advance through revisions to this document.
-
-RHCE exam candidates should be able to accomplish the following without assistance. These have been grouped into several categories.
-
-
+RHCE Exam objectives - 8/24/14
+RHEL 7 Objectives
 
 System configuration and management
 
+	Use network teaming or bonding to configure aggregated network links between two Red Hat Enterprise Linux systems
 
-	Route IP traffic and create static routes.
+	Configure IPv6 addresses and perform basic IPv6 troubleshooting
 
-	Use iptables to implement packet filtering and configure network address translation (NAT).
+	Route IP traffic and create static routes
 
-	Use /proc/sys and sysctl to modify and set kernel runtime parameters.
-	Configure a system to authenticate using Kerberos.
+	Use firewalld and associated mechanisms such as rich rules, zones and custom rules, to implement packet filtering and configure network address translation (NAT)
 
-	Configure a system as an iSCSI initiator that persistently mounts an iSCSI target.
+		Firewalld is the new userland interface in RHEL 7. It replaces the iptables interface and connects to the netfilter kernel code. It mainly improves the security rules management by allowing configuration changes without stopping the current connections.
 
-	Produce and deliver reports on system utilization (processor, memory, disk, and network).
+		To know if Firewalld is running, type:
 
-	Use shell scripting to automate system maintenance tasks.
+		# systemctl status firewalld
+		firewalld.service - firewalld - dynamic firewall daemon
+		   Loaded: loaded (/usr/lib/systemd/system/firewalld.service; enabled)
+		   Active: active (running) since Tue 2014-06-17 11:14:49 CEST; 5 days ago
+		   ...
+		or alternatively:
 
-	Configure a system to log to a remote system.
+		# firewall-cmd --state
+		running
+		Note: If Firewalld is not running, the command displays not running.
 
-	Configure a system to accept logging from a remote system.
+		If you’ve got several network interfaces in IPv4, you will have to activate ip_forwarding.
+		To do that, paste the following line in the /etc/sysctl.conf file:
 
+		net.ipv4.ip_forward=1
+		Then, activate the configuration:
 
+		# sysctl -p
+		Although Firewalld is the RHEL 7 way to deal with firewalls and provides many improvements, iptables can still be used.
+
+		Zone management
+
+		Also, a new concept of zone appears: all network interfaces can be located in the same default zone or divided into different ones according to the levels of trust defined.
+		Note: Don’t bother with the concept of zone if you’ve got only one network interface, everything will be done in the public zone by default. It becomes useful when you’ve got two or more network interfaces and decide to assign them to different zones.
+
+		To get the default zone, type:
+
+		# firewall-cmd --get-default-zone
+		public
+		To get the list of zones where you’ve got network interfaces assigned to, type:
+
+		# firewall-cmd --get-active-zones
+		public
+		interfaces: eth0
+		To get the list of all the available zones, type:
+
+		# firewall-cmd --get-zones
+		block dmz drop external home internal public trusted work
+		To change the default zone to home permanently, type:
+
+		# firewall-cmd --set-default-zone=home
+		success
+		Network interfaces can be assigned to a zone in a temporary (until the next reboot or reload) or permanent way.
+
+		To assign the eth0 network interface temporary to the internal zone, type:
+
+		# firewall-cmd --zone=internal --change-interface=eth0
+		success
+		To assign the eth0 network interface permanently to the internal zone (a file called internal.xml is created in the /etc/firewalld/zones directory), type:
+
+		# firewall-cmd --permanent --zone=internal --change-interface=eth0
+		success
+		To know which zone is associated with the eth0 interface, type:
+
+		# firewall-cmd --get-zone-of-interface=eth0
+		internal
+		To get all the details about the public zone, type:
+
+		# firewall-cmd --zone=public --list-all
+		public (default, active)
+		  interfaces: eth0
+		  sources: 
+		  services: dhcpv6-client ssh
+		  ports: 
+		  masquerade: no
+		  forward-ports: 
+		  icmp-blocks: 
+		  rich rules: 
+		Note: The –list-all option only displays the permanent settings.
+
+		Service management
+
+		After assigning each network interface to a zone, it is now possible to add services to each zone.
+		To allow the http service permanently in the internal zone, type:
+
+		# firewall-cmd --permanent --zone=internal --add-service=http
+		success
+		# firewall-cmd --reload
+		Note1: Type –remove-service=http to deny the http service.
+		Note2: The firewall-cmd –reload command is necessary to activate the change. Contrary to the –complete-reload option, current connections are not stopped.
+
+		To get the list of services in the default zone, type:
+
+		# firewall-cmd --list-services
+		dhcpv6-client ssh
+		Note: To get the list of the services in a particular zone, add the –zone= option.
+
+		Service firewall configuration
+
+		With the Firewalld package, the firewall configuration of the main services (ftp, httpd, etc) comes in the /usr/lib/firewalld/services directory. But it is still possible to add new ones in the /etc/firewalld/services directory. Also, if files exist at both locations for the same service, the file in the /etc/firewalld/services directory takes precedence.
+
+		For example, it is the case of the HAProxy service. There is no firewall configuration associated.
+		Create the /etc/firewalld/services/haproxy.xml and paste the following lines:
+
+		<?xml version="1.0" encoding="utf-8"?>
+		<service>
+		 <short>HAProxy</short>
+		 <description>HAProxy load-balancer</description>
+		 <port protocol="tcp" port="80"/>
+		</service>
+		Assign the correct SELinux context and file permissions to the haproxy.xml file:
+
+		# cd /etc/firewalld/services
+		# restorecon haproxy.xml
+		# chmod 640 haproxy.xml
+		Add the HAProxy service to the default zone permanently and reload the firewall configuration:
+
+		# firewall-cmd --permanent --add-service=haproxy
+		# firewall-cmd --reload
+		Port management
+
+		Port management follows the same model as service management.
+
+		To allow the 443/tcp port temporary in the internal zone, type:
+
+		# firewall-cmd --zone=internal --add-port=443/tcp
+		success
+		# firewall-cmd --reload
+		Note: type –remove-port=443/tcp to deny the port.
+
+		To get the list of ports open in the internal zone, type:
+
+		# firewall-cmd --zone=internal --list-ports
+		443/tcp
+		Masquerading
+
+		If your firewall is your network gateway and you don’t want everybody to know your internal addresses, you can set up two zones, one called internal, the other external, and configure masquerading on the external zone. This way, all packets will get your firewall ip address as source address.
+
+		To set up masquerading on the external zone, type:
+
+		# firewall-cmd --zone=external --add-masquerade
+		Note1: To remove masquerading, use the –remove-masquerade option.
+		Note2: To know if masquerading is active in a zone, use the –query-masquerade option.
+
+		Port forwarding
+
+		In addition to the masquerading, you can want to use port forwarding.
+		If you want all packets intended for port 22 to be now forwarded to port 3753, type:
+
+		# firewall-cmd --zone=external --add-forward-port=port=22:proto=tcp:toport=3753
+		Note1: To remove port forwarding, use the –remove-forward-port option.
+		Note2: To know if port forwarding is active in a zone, use the –query-forward-port option.
+		Also, if you want to define the destination ip address, type:
+
+		# firewall-cmd --zone=external --add-forward-port=port=22:proto=tcp:toport=3753:toaddr=10.0.0.1
+		Direct rules
+
+		It is still possible to set specific rules by using the direct mode (here to open the tcp port 9000) that by-passes the Firewalld interface:
+
+		# firewall-cmd --direct --add-rule ipv4 filter INPUT 0 -p tcp --dport 9000 -j ACCEPT
+		success
+		# firewall-cmd --reload
+		Note: This last example has been borrowed from Khosro Taraghi’s blog.
+
+		To display all the direct rules added, type:
+
+		# firewall-cmd --direct --get-all-rules
+
+	Use /proc/sys and sysctl to modify and set kernel runtime parameters
+
+		You’ve got two ways to set kernel runtime parameters (at least).
+
+		/proc filesystem
+
+		To get the value of a kernel parameter (here /proc/sys/net/ipv4/ip_forward used for allowing a host to act as an IPv4 router), type:
+
+		# cat /proc/sys/net/ipv4/ip_forward
+		To set the value of the same parameter, type:
+
+		# echo 1 > /proc/sys/net/ipv4/ip_forward
+		Note: 1 is used for On and 0 for off.
+
+		This change is instantaneously active but doesn’t resist to a reboot. You have to write it into the /etc/rc.d/rc.local file to get it re-applied at each boot but there is another solution.
+
+		/etc/sysctl.conf file
+
+		The /etc/sysctl.conf file stores the kernel parameter values.
+
+		To get the same result as the previous method, edit the /etc/sysctl.conf file and paste the following line:
+
+		net.ipv4.ip_forward = 1                  # allow IPv4 forwarding
+		Then, you need to put the change into practice:
+
+		# sysctl -p
+		Many kernel parameters can be set this way. Here are only few of them:
+
+		net.ipv4.icmp_echo_ignore_all = 1        # don't respond to a ping
+		net.ipv4.icmp_echo_ignore_broadcasts = 1 # don't respond to a ping to the broadcast address
+		net.ipv6.conf.all.disable_ipv6 = 1       # disable IPv6 for all network interfaces
+
+	Configure a system to authenticate using Kerberos
+
+		Before configuring a Kerberos client, you have to configure a KDC.
+		Also, to get Kerberos running, NTP synchronization and hostname resolution must be working.
+		If no working DNS, add the following lines in the /etc/hosts file (replace the specified ip addresses with yours):
+
+		192.168.1.11 kbserver.example.com
+		192.168.1.12 kbclient.example.com
+		Client Configuration
+
+		Install the Kerberos client packages:
+
+		# yum install -y krb5-workstation pam_krb5
+		Edit the /etc/krb5.conf file, uncomment all the lines, replace EXAMPLE.COM with your own realm, example.com with your own domain name, and kerberos.example.com with your own KDC server name (here kbserver.example.com).
+
+		Create a user for test:
+
+		# useradd user01
+		Add the client machine name (here kbclient.example.com) to the principals:
+
+		# kadmin -q "addprinc -randkey host/kbclient.example.com"
+		Authenticating as principal root/admin@EXAMPLE.COM with password.
+		Password for root/admin@EXAMPLE.COM: kerberos
+		WARNING: no policy specified for host/kbclient.example.com@EXAMPLE.COM; defaulting to no policy
+		Principal "host/kbclient.example.com@EXAMPLE.COM" created.
+		# kadmin -q "ktadd -k /etc/krb5.keytab host/kbclient.example.com"
+		Authenticating as principal root/admin@EXAMPLE.COM with password.
+		Password for root/admin@EXAMPLE.COM: kerberos
+		Entry for principal host/kbclient.example.com with kvno 2, encryption type aes256-cts-hmac-sha1-96 added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/kbclient.example.com with kvno 2, encryption type aes128-cts-hmac-sha1-96 added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/kbclient.example.com with kvno 2, encryption type des3-cbc-sha1 added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/kbclient.example.com with kvno 2, encryption type arcfour-hmac added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/kbclient.example.com with kvno 2, encryption type camellia256-cts-cmac added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/kbclient.example.com with kvno 2, encryption type camellia128-cts-cmac added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/kbclient.example.com with kvno 2, encryption type des-hmac-sha1 added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/kbclient.example.com with kvno 2, encryption type des-cbc-md5 added to keytab WRFILE:/etc/krb5.keytab.
+		Edit the /etc/ssh/ssh_config file and add/uncomment the following lines:
+
+		GSSAPIAuthentication yes
+		GSSAPIDelegateCredentials yes
+		Reload the sshd service configuration:
+
+		# systemctl reload sshd
+		Configure the PAM component with a text interface:
+
+		# authconfig-tui
+		Select “[*] Use Kerberos” in the Authentication column, then Next and OK.
+
+		Alternatively, configure the PAM component at the command line:
+
+		# authconfig --enablekrb5 --update
+		Test your configuration (here kbserver.example.com is the KDC server name):
+
+		# kinit user01
+		Password for user01@EXAMPLE.COM: user01
+		# ssh user01@kbserver.example.com
+		$ klist
+		Ticket cache: KEYRING:persistent:1000:1000
+		Default principal: user01@EXAMPLE.COM
+
+		Valid starting Expires Service principal
+		07/22/2014 17:20:15 07/23/2014 17:19:54 krbtgt/EXAMPLE.COM@EXAMPLE.COM
+		 renew until 07/22/2014 17:19:54
+		Now, you should be able to quit and reconnect without giving any password.
+		In addition, the first time you log in to a Kerberos client, you have to provide a login/password. Then, you get a ticket that allows you to log in to all the other Kerberos clients in the same realm and you don’t need to provide a password any more as long as your ticket is valid.
+		Note: To delete a ticket, use the kdestroy command.
+
+	Configure a system as either an iSCSI target or initiator that persistently mounts an iSCSI target
+
+		Presentation
+
+		In the iSCSI world, you’ve got two types of agents:
+
+		an iSCSI target provides some storage (here called server),
+		an iSCSI initiator uses this available storage (here called client).
+		As you already guessed, we are going to use two virtual machines, respectively called server and client. If necessary, the server and client virtual machines can be one and only one machine.
+
+		iSCSI target configuration
+
+		Most of the target configuration is done interactively through the targetcli command. This command uses a directory tree to access the different objects.
+
+		To create an iSCSI target, you need to follow several steps on the server virtual machine.
+
+		Install the following packages:
+
+		# yum install -y targetcli
+		Activate the target service at boot:
+
+		# systemctl enable target
+		Note: This is mandatory, otherwise your configuration won’t be read after a reboot!
+
+		Execute the targetcli command:
+
+		# targetcli
+		Warning: Could not load preferences file /root/.targetcli/prefs.bin.
+		targetcli shell version 2.1.fb34
+		Copyright 2011-2013 by Datera, Inc and others.
+		For help on commands, type 'help'.
+		/>
+		Create a file called shareddata of 100MB in the /opt directory (don’t hesitate to use tab completion):
+
+		/> backstores/fileio create shareddata /opt/shareddata.img 100M
+		Created fileio shareddata with size 104857600
+		Create a target with an iscsi qualified name (iqn) and an associated TPG (Target Portal Group):
+
+		/> iscsi/ create iqn.2014-08.com.example:tgt1
+		Created target iqn.2014-08.com.example:tgt1.
+		Created TPG 1.
+		Now, we can go to the newly created directory:
+
+		/> cd iscsi/iqn.2014-08.com.example:tgt1/tpg1
+		/iscsi/iqn.20...ple:tgt1/tpg1> ls
+		o- tpg1 ................................................. [no-gen-acls, no-auth]
+		  o- acls ............................................................ [ACLs: 0]
+		  o- luns ............................................................ [LUNs: 0]
+		  o- portals ...................................................... [Portals: 0]
+		Below tpg1, three objects have been defined:
+
+		acls (access control lists: restrict access to resources),
+		luns (logical unit number: define exported resources),
+		portals (define ways to reach the exported resources; consist in pairs of IP addresses and ports).
+		Create a portal (a pair of IP address and port through which the target can be contacted by initiators):
+
+		/iscsi/iqn.20...ple:tgt1/tpg1> portals/ create
+		Using default IP port 3260
+		Binding to INADDR_ANY (0.0.0.0)
+		Created network portal 0.0.0.0:3260.
+		Create a lun:
+
+		/iscsi/iqn.20...ple:tgt1/tpg1> luns/ create /backstores/fileio/shareddata
+		Created LUN 0.
+		Don’t set any authentication:
+
+		/iscsi/iqn.20...ple:tgt1/tpg1> set attribute authentication=0 demo_mode_write_protect=0
+		Parameter authentication is now '0'.
+		Parameter demo_mode_write_protect is now '0'.
+		Note: Don’t forget the demo_mode_write_protect=0 option, otherwise the resource will be in read-only mode, not advisable to create a file system!
+
+		Don’t set any acl:
+
+		/iscsi/iqn.20...ple:tgt1/tpg1> set attribute generate_node_acls=1
+		Parameter generate_node_acls is now '1'.
+		Now, to check the configuration, type:
+
+		/iscsi/iqn.20...ple:tgt1/tpg1> ls
+		o- tpg1 .................................................... [gen-acls, no-auth]
+		  o- acls ............................................................ [ACLs: 0]
+		  o- luns ............................................................ [LUNs: 1]
+		  | o- lun0 .......................... [fileio/shareddata (/opt/shareddata.img)]
+		  o- portals ...................................................... [Portals: 1]
+		    o- 0.0.0.0:3260 ....................................................... [OK]
+		Finally, you can quit the targetcli command:
+
+		/iscsi/iqn.20...ple:tgt1/tpg1> exit
+		Global pref auto_save_on_exit=true
+		Last 10 configs saved in /etc/target/backup.
+		Configuration saved to /etc/target/saveconfig.json
+		Note: The configuration is automatically saved to the /etc/target/saveconfig.json file.
+
+		Also, it can be useful to check the ports currently used:
+
+		# netstat -ant
+		Active Internet connections (servers and established)
+		Proto Recv-Q Send-Q Local Address           Foreign Address         State
+		tcp        0      0 127.0.0.1:25            0.0.0.0:*               LISTEN
+		tcp        0      0 0.0.0.0:3260            0.0.0.0:*               LISTEN
+		tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN
+		tcp6       0      0 ::1:25                  :::*                    LISTEN
+		tcp6       0      0 :::22                   :::*                    LISTEN
+		Create the file /etc/firewalld/services/iscsi.xml file and paste the following lines:
+
+		<?xml version="1.0" encoding="utf-8"?>
+		<service>
+		<short>iSCSI</short>
+		<description>iSCSI protocol</description>
+		<port protocol="tcp" port="3260"/>
+		</service>
+		Add a new service to the firewall:
+
+		# firewall-cmd --permanent --add-service=iscsi
+		Success
+		Reload the firewall configuration:
+
+		# firewall-cmd --reload
+		Success
+		iSCSI initiator configuration
+
+		To create an iSCSI initiator, you need to follow several steps on the client virtual machine.
+
+		Install the following package:
+
+		# yum install -y iscsi-initiator-utils
+		Execute the iscsiadm command in discovery mode with the server ip address (here 192.168.1.81):
+
+		# iscsiadm --mode discovery --type sendtargets --portal 192.168.1.81
+		192.168.1.81:3260,1 iqn.2014-08.com.example:tgt1
+		Execute the iscsiadm command in node mode with the server ip address (here 192.168.1.81):
+
+		# iscsiadm --mode node --targetname iqn.2014-08.com.example:tgt1 --portal 192.168.1.81 --login
+		Logging in to [iface: default, target: iqn.2014-08.com.example:tgt1, portal: 192.168.1.81,3260] (multiple)
+		Login to [iface: default, target: iqn.2014-08.com.example:tgt1, portal: 192.168.1.81,3260] successful.
+		To check the configuration, type:
+
+		# lsblk --scsi
+		NAME HCTL       TYPE VENDOR   MODEL             REV TRAN
+		sda  2:0:0:0    disk LIO-ORG  shareddata       4.0  iscsi
+		To be sure that your resource is not in read-only mode (1=read-only mode), type:
+
+		# lsblk | egrep "NAME|sda"
+		NAME               MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+		sda                  8:0    0  100M  0 disk
+		Now, you can create a file system:
+
+		# mkfs.ext4 /dev/sda
+		mke2fs 1.42.9 (28-Dec-2013)
+		/dev/sda is entire device, not just one partition!
+		Proceed anyway? (y,n) y
+		Filesystem label=
+		OS type: Linux
+		Block size=1024 (log=0)
+		Fragment size=1024 (log=0)
+		Stride=0 blocks, Stripe width=4096 blocks
+		25688 inodes, 102400 blocks
+		5120 blocks (5.00%) reserved for the super user
+		First data block=1
+		Maximum filesystem blocks=33685504
+		13 block groups
+		8192 blocks per group, 8192 fragments per group
+		1976 inodes per group
+		Superblock backups stored on blocks:
+		8193, 24577, 40961, 57345, 73729
+
+		Allocating group tables: done
+		Writing inode tables: done
+		Creating journal (4096 blocks): done
+		Writing superblocks and filesystem accounting information: done
+		Retrieve the UUID of this disk:
+
+		# blkid | grep "/dev/sda"
+		/dev/sda: UUID="4a184c70-20ad-4d91-a0b1-c2cf0eb1986f" TYPE="ext4"
+		Add the disk UUID to the /etc/fstab file:
+
+		# echo "UUID=..." >> /etc/fstab
+		Note: Be very careful to type >> and not >, otherwise this will destroy all your configuration!
+		Make a copy of the /etc/fstab file before doing this operation if you don’t want to take any risk.
+
+		Edit the /etc/fstab file and add the mount point (here /mnt), the file system type (here ext4) and the mount options (_netdev):
+
+		UUID=... /mnt ext4 _netdev 0 0
+		To check your configuration, type:
+
+		# mount -a
+		Note: Before rebooting, set up  a virtual console, this can be helpful!
+
+		Source: targetcli man page and Linux-iSCSI wiki.
+
+		In addition, you can watch TheUrbanPenguin’s video Create iScsi Targets (10min) (don’t forget to enable the target service, set the demo_mode_write_protect=0 option and the firewalld configuration).
+
+	Produce and deliver reports on system utilization (processor, memory, disk, and network)
+
+		Install the sysstat package if it’s not already the case:
+
+		# yum install -y sysstat
+		Activate the sysstat service at boot (if it’s not already the case):
+
+		# systemctl enable sysstat
+		Produce a report for a given day (here the 11th) (-u for CPU usage, -r for memory usage, -dp for disk activity, -n DEV for network activity):
+
+		# sadf -d /var/log/sa/sa11 -- -u -r -dp -n DEV
+
+	Use shell scripting to automate system maintenance tasks
 
 
 Network services
 
+Network services are an important subset of the exam objectives. RHCE candidates should be capable of meeting the following objectives for each of the network services listed below:
 
-	Network services are an important subset of the exam objectives. RHCE candidates should be capable of meeting the following objectives for each of the network services listed below:
+	Install the packages needed to provide the service
 
-	Install the packages needed to provide the service.
+		To configure an access to a remote repository, create the /etc/yum.repos.d/remote.repo file and add the following lines:
 
-	Configure SELinux to support the service.
+			[base]
+			name=CentOS-$releasever - Base
+			baseurl=http://mirror.centos.org/centos/$releasever/os/$basearch/
+			enabled=1
 
-	Configure the service to start when the system is booted.
+		SYS: Configure a local repository.
+			Create a directory where packages will be stored:
 
-	Configure the service for basic operation.
+			# mkdir /repo
+			Two options: mount the distribution DVD or copy it into /repo.
+			To mount the DVD, edit the /dev/fstab file and add the following line:
 
-	Configure host-based and user-based security for the service.
+			/dev/cdrom /repo iso9660 loop 0 0
+			Then, mount the DVD:
+
+			# mount -a
+			To copy the DVD, type:
+
+			# mount -o loop /dev/cdrom /mnt
+			# cd /mnt
+			# tar cvf - . | (cd /repo; tar xvf -)
+			# cd /; umount /mnt
+			Optionally, update the repository structure (if new packages have been added):
+
+			# yum install -y createrepo
+			# createrepo /repo
+			Create the /etc/yum.repos.d/local.repo file and add the following lines:
+
+			[repo]
+			name=Repo - Base
+			Baseurl=file:///repo
+			enabled=1
+			Clean up the yum cache:
+			# yum clean all
+
+		SYS: Learn to use the rpm command.
+
+			To install (-i) a new package (here httpd-2.2.15-29.el6.x86_64.rpm), type:
+
+			# rpm -ivh httpd-2.2.15-29.el6.x86_64.rpm
+			To upgrade (-U) an existing package (here httpd-2.2.15-29.el6.x86_64.rpm), type:
+
+			# rpm -Uvh httpd-2.2.15-29.el6.x86_64.rpm
+			To erase (-e) an existing package (here httpd-2.2.15-29.el6.x86_64), type:
+
+			# rpm -evh httpd-2.2.15-29.el6.x86_64
+			To get the list of all the installed package, type:
+
+			# rpm -qa
+			To get some details about a package (here httpd-2.2.15-29.el6.x86_64), type:
+
+			# rpm -qi httpd-2.2.15-29.el6.x86_64
+			To get the package file list (here httpd-2.2.15-29.el6.x86_64), type:
+
+			# rpm -ql httpd-2.2.15-29.el6.x86_64
+			To get the list of all the modified files in the system, type:
+
+			# rpm -qVa
+
+		SYS: Learn to use the yum command.
+
+			To install a new package (here httpd), type:
+
+			# yum install httpd
+			To remove an existing package (here httpd), type:
+
+			# yum remove httpd
+			To get some details about a package (here httpd), type:
+
+			# yum info httpd
+			To install a package group (here “Web Server”), type:
+
+			# yum groupinstall "Web Server"
+			To remove a package group (here “Web Server”), type:
+
+			# yum groupremove "Web Server"
+			To get the list of installed package groups, type:
+
+			# yum grouplist
+			To get some details about a package group (here “Web Server”), type:
+
+			# yum groupinfo "Web Server"
+			To define which package provides a specified file (here semanage), type:
+
+			# yum whatprovides */semanage
+			To update the current base of installed packages, type:
+
+			# yum update
+			To get the list of all the available packages, type:
+
+			# yum list
+			To get the list of the available repository, type:
+
+			# yum repolist
+			To clean up the yum cache, type:
+
+			# yum clean all
+			To get the list of the dependencies associated with a package (here httpd), type:
+
+			# yum deplist httpd
 
 
+	Configure SELinux to support the service
+
+	Use SELinux port labeling to allow services to use non-standard ports
+
+	Configure the service to start when the system is booted
+
+		To configure network services to start automatically at boot (for example httpd), type:
+
+		# systemctl enable httpd
+		To check the configuration, type:
+
+		# systemctl is-enabled httpd
+
+	Configure the service for basic operation
+
+		To start a network service (here httpd), type:
+
+		# systemctl start httpd
+		To stop a network service (here httpd), type:
+
+		# systemctl stop httpd
+		To check if a network service (here httpd) is running, type:
+
+		# systemctl is-active httpd
+		To check the status of a network service (here httpd), type:
+
+		# systemctl status httpd
+
+	Configure host-based and user-based security for the service 
 
 
 HTTP/HTTPS
 
+	To install an Apache server, execute the following steps:
 
-	Configure a virtual host.
+		Install the Web Server package group:
 
-	Configure private directories.
+		# yum groupinstall -y "Web server"
+		Activate at boot time and start the service:
 
-	Deploy a basic CGI application.
+		# systemctl enable httpd
+		# systemctl start httpd
+		Add the HTTP service to the firewall configuration and reload it:
 
-	Configure group-managed content.
+		# firewall-cmd --permanent --add-service=http
+		Success
+		# firewall-cmd --reload
+		Success
+		Optionally, you can set the ServerName directive in the /etc/httpd/conf/http.conf file.
 
+	Configure a virtual host
 
+		First, follow the instructions to install an Apache web server.
 
+		Let’s assume your website is called dummy-host.example.com.
+
+		Create the /var/www/html/dummy-host.example.com directory:
+
+		# cd /var/www/html
+		# mkdir dummy-host.example.com
+		Create an index.html file and assign the correct SELinux context:
+
+		# echo "This is a test." > dummy-host.example.com/index.html
+		# restorecon -R dummy-host.example.com
+		Create the /etc/httpd/conf.d/vhosts.conf file and paste the following lines:
+
+		<VirtualHost *:80>
+		ServerAdmin webmaster@dummy-host.example.com
+		DocumentRoot /var/html/www/dummy-host.example.com
+		ServerName dummy-host.example.com
+		ErrorLog logs/dummy-host.example.com-error_log
+		CustomLog logs/dummy-host.example.com-access_log common
+		</VirtualHost>
+		Optionaly, rename the /etc/httpd/conf.d/ssl.conf file, otherwise you get an additional non-working https virtual host displayed in the configuration.
+
+		# cd /etc/httpd/conf.d; mv ssl.conf ssl.conf2
+		Check the validity of the configuration:
+
+		# httpd -t
+		Syntax OK
+		Or:
+
+		# apachectl configtest
+		Syntax OK
+		Restart the httpd service:
+
+		# systemctl restart httpd
+		Check the virtual host(s) configuration:
+
+		# httpd -D DUMP_VHOSTS
+		VirtualHost configuration:
+		*:80                   is a NameVirtualHost
+		         default server dummy-host.example.com (/etc/httpd/conf.d/vhosts.conf:1)
+		         port 80 namevhost dummy-host.example.com (/etc/httpd/conf.d/vhosts.conf:1)
+		         port 80 namevhost dummy-host.example.com (/etc/httpd/conf.d/vhosts.conf:1)
+		Check the configuration:
+
+		# yum install -y elinks
+		# elinks http://dummy-host.example.com
+
+	Configure private directories
+
+		Then, create a private directory (called here private):
+
+		# cd /var/www/html 
+		# mkdir private
+		# echo "This is a test." > private/index.html
+		# restorecon -R .
+		There are several ways to restrict access to this directory:
+
+		1) host-based private directories
+		To only allow the test.example.com host (add the name/IP address in the /etc/hosts file if necessary) to access a specific directory (here private), edit the /etc/httpd/conf/httpd.conf file and paste the following lines at the end:
+
+		<Directory "/var/www/html/private">
+		AllowOverride None
+		Options None
+		Require host test.example.com
+		</Directory>
+		Check the configuration file:
+
+		# apachectl configtest
+		Syntax OK
+		2) user-based private directories
+		To only allow me to access a specific directory (here private), edit the /etc/httpd/conf/httpd.conf file and paste the following lines at the end:
+
+		<Directory "/var/www/html/private">
+		AuthType Basic
+		AuthName "Password protected area"
+		AuthUserFile /etc/httpd/conf/passwd
+		Require user me
+		</Directory>
+		Check the configuration file:
+
+		# apachectl configtest
+		Syntax OK
+		Create the passwd file and store me‘s password:
+
+		# cd /etc/httpd/conf
+		# htpasswd -c passwd me
+		New password: your password
+		Re-type new password: your password
+		Adding password for user me
+		# chmod 600 passwd
+		# chown apache:apache passwd
+		Note: The .htpasswd file can locally be used instead of the httpd.conf file in 1) and 2) for the same purpose.
+
+		Whatever the option chosen, restart the httpd service:
+
+		# systemctl restart httpd
+		Check the httpd service:
+
+		# yum install -y elinks
+		# elinks http://localhost/private
+
+	Deploy a basic CGI application
+
+		Create the /var/www/cgi-bin/hello.pl Perl script and insert the following lines:
+
+		#!/usr/bin/perl
+		print "Content-type: text/html\n\n";
+		print "Hello, World!";
+		Make this script executable:
+
+		# chmod 755 /var/www/cgi-bin/hello.pl
+		Restart the httpd service:
+
+		# systemctl restart httpd
+		Check the SELinux httpd_enable_cgi boolean is on (it is on by default):
+
+		# getsebool httpd_enable_cgi
+		httpd_enable_cgi --> on
+		Check the httpd service:
+
+		# yum install -y elinks
+		# elinks http://localhost/cgi-bin/hello.pl
+		Alternatively, if you want to use a directory other than the /var/www/cgi-bin/ default (/webapp for example), you will have some additional steps.
+
+		Create the /webapp directory:
+
+		# mkdir /webapp
+		Move the hello.pl file into it:
+
+		# mv /var/www/cgi-bin/hello.pl /webapp
+		Set up SElinux configuration for the /webapp directory:
+
+		# yum install -y setroubleshoot-server
+		# semanage fcontext -a -t httpd_sys_script_exec_t "/webapp(/.*)?"
+		# restorecon -R /webapp
+		Edit the /etc/httpd/conf/httpd.conf file and replace the ‘ScriptAlias‘ option with the following line:
+
+		ScriptAlias /cgi-bin/ "/webapp/"
+		In the same file, where the configuration of your website (or virtual host) is located, add the following lines:
+
+		<Directory "/webapp">
+		AllowOverride None
+		Options None
+		Require all granted
+		</Directory>
+		In the same stanza, you can optionally add the following lines (but it doesn’t seem mandatory):
+
+		Options ExecCGI
+		AddHandler cgi-script .pl
+		Check the configuration file:
+
+		# apachectl configtest
+		Syntax OK
+		Restart the httpd service:
+
+		# systemctl restart httpd
+		Check the execution of the Perl script:
+
+		# yum install -y elinks
+		# elinks http://localhost/cgi-bin/hello.pl
+
+	Configure group-managed content
+
+		To allow only a group of users (here nikos and steve from the team) to access a specific directory (here private), edit the /etc/httpd/conf/httpd.conf file and paste the following lines at the end:
+
+		<Directory "/var/www/html/private">
+		AuthType Basic
+		AuthName "Password protected area"
+		AuthGroupFile /etc/httpd/conf/team
+		AuthUserFile /etc/httpd/conf/passwd
+		Require group team
+		</Directory>
+		Check the configuration file:
+
+		# apachectl configtest
+		Syntax OK
+		Create the /var/www/html/private directory and assign the correct SELinux context:
+
+		# mkdir -p /var/www/html/private
+		# restorecon -R /var/www/html/private
+		Create the /etc/httpd/conf/team file and paste the following line:
+
+		team: nikos steve
+		Create the /etc/httpd/conf/passwd file, add the nikos and steve accounts with their own passwords:
+
+		# htpasswd -c /etc/httpd/conf/passwd nikos
+		New password: nikos
+		Re-type new password: nikos
+		Adding password for user nikos
+		# htpasswd /etc/httpd/conf/passwd steve
+		New password: steve
+		Re-type new password: steve
+		Adding password for user steve
+		Restart the httpd service:
+
+		# systemctl restart httpd
+		Check the configuration:
+
+		# yum install -y elinks
+		# elinks http://localhost/private/
+
+	Configure TLS security
+
+		Install the Web Server package group:
+
+		# yum groupinstall -y "Web server"
+		Activate at boot time and start the service:
+
+		# systemctl enable httpd
+		# systemctl start httpd
+		Add the HTTPS service to the firewall configuration and reload it:
+
+		# firewall-cmd --permanent --add-service=https
+		Success
+		# firewall-cmd --reload
+		Success
+		Let’s assume your server is called instructor.example.com.
+
+		Generate a X509 certificate valid for 365 days:
+
+		# openssl req -new -x509 -nodes -out /etc/pki/tls/certs/instructor.example.com.crt -keyout /etc/pki/tls/private/instructor.example.com.key -days 365
+		Generating a 2048 bit RSA private key
+		.....+++
+		..............+++
+		writing new private key to '/etc/pki/tls/private/instructor.example.com.key'
+		-----
+		You are about to be asked to enter information that will be incorporated
+		into your certificate request.
+		What you are about to enter is what is called a Distinguished Name or a DN.
+		There are quite a few fields but you can leave some blank
+		For some fields there will be a default value,
+		If you enter '.', the field will be left blank.
+		-----
+		Country Name (2 letter code) [XX]:
+		State or Province Name (full name) []:
+		Locality Name (eg, city) [Default City]:
+		Organization Name (eg, company) [Default Company Ltd]:
+		Organizational Unit Name (eg, section) []:
+		Common Name (eg, your name or your server's hostname) []:instructor.example.com
+		Email Address []:
+		Edit the /etc/httpd/conf.d/ssl.conf file, search for the SSLCertificate string and replace as follows:
+
+		SSLCertificateFile /etc/pki/tls/certs/instructor.example.com.crt
+		SSLCertificateKeyFile /etc/pki/tls/private/instructor.example.com.key
+		In the same file, search for the ServerName string and replace as follows:
+
+		ServerName instructor.example.com:443
+		Check the validity of the configuration:
+
+		# httpd -t
+		Syntax OK
+		Or:
+
+		# apachectl configtest
+		Syntax OK
+		Restart the Apache webserver:
+
+		# apachectl restart
+		Check the virtual host configuration:
+
+		# httpd -D DUMP_VHOSTS
+		VirtualHost configuration:
+		*:443                   is a NameVirtualHost
+		         default server instructor.example.com (/etc/httpd/conf.d/ssl.conf:56)
+		         port 443 namevhost instructor.example.com (/etc/httpd/conf.d/ssl.conf:56)
+		         port 443 namevhost instructor.example.com (/etc/httpd/conf.d/ssl.conf:56)
+		Optionally, check the certificate:
+
+		# openssl s_client -connect localhost:443 -state
+		SSL_connect:before/connect initialization
+		SSL_connect:SSLv2/v3 write client hello A
+		SSL_connect:SSLv3 read server hello A
+		depth=0 C = XX, L = Default City, O = Default Company Ltd, CN = instructor.example.com
+		verify error:num=18:self signed certificate
+		verify return:1
+		depth=0 C = XX, L = Default City, O = Default Company Ltd, CN = instructor.example.com
+		verify return:1
+		SSL_connect:SSLv3 read server certificate A
+		SSL_connect:SSLv3 read server key exchange A
+		SSL_connect:SSLv3 read server done A
+		SSL_connect:SSLv3 write client key exchange A
+		SSL_connect:SSLv3 write change cipher spec A
+		SSL_connect:SSLv3 write finished A
+		SSL_connect:SSLv3 flush data
+		SSL_connect:SSLv3 read server session ticket A
+		SSL_connect:SSLv3 read finished A
+		CONNECTED(00000003)
+		---
+		Certificate chain
+		 0 s:/C=XX/L=Default City/O=Default Company Ltd/CN=instructor.example.com
+		   i:/C=XX/L=Default City/O=Default Company Ltd/CN=instructor.example.com
+		---
+		Server certificate
+		-----BEGIN CERTIFICATE-----
+		MIIDkzCCAnugAwIBAgIJAIw+9vpI8jtuMA0GCSqGSIb3DQEBCwUAMGAxCzAJBgNV
+		BAYTAlhYMRUwEwYDVQQHDAxEZWZhdWx0IENpdHkxHDAaBgNVBAoME0RlZmF1bHQg
+		Q29tcGFueSBMdGQxHDAaBgNVBAMME2NlbnRvczguZXhhbXBsZS5jb20wHhcNMTQw
+		ODIwMTQyNDQwWhcNMTUwODIwMTQyNDQwWjBgMQswCQYDVQQGEwJYWDEVMBMGA1UE
+		BwwMRGVmYXVsdCBDaXR5MRwwGgYDVQQKDBNEZWZhdWx0IENvbXBhbnkgTHRkMRww
+		GgYDVQQDDBNjZW50b3M4LmV4YW1wbGUuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOC
+		AQ8AMIIBCgKCAQEA3zu5krRBCOU8+2XBM/dk3fjDqLn439/4lXg9o9LdT4aSAP8e
+		iJJhM5SoG44nYNYBjVchKCzU6WhpkQ43fMEK3jIFnkxAvldz7zhizA8moI9ewuMj
+		xnWeVCQMC41Jk4jw2pKitVxt5Lk4SX6bZfvkisHGH/RV6WDaargMrJ8N5Pt80jF0
+		CnldiKZ8PnqFlqhoHH+aeUvrJXmUzmhCxmjXx4YK6UtZ9pbJIlyzkNnD3XOjHwuC
+		hnMJNnA3jafD471Lu9nNB5EKSIdwn/scfSuo/fcWlrSpKEE1SEB+qs89R5vPIEmu
+		IjhXrgIlW6HDo1hSWQDe8/eulChHGRMZJFlMUwIDAQABo1AwTjAdBgNVHQ4EFgQU
+		+VlrvVt4y6P8G01P0DSW9XwBypUwHwYDVR0jBBgwFoAU+VlrvVt4y6P8G01P0DSW
+		9XwBypUwDAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAgYYVnrs0GDGj
+		WHtGfak4Mkhw9DcTp60N8+AQR0mXInSA3oekojnCMqQOlf8HmiVJ6EpNgo+L2mFh
+		pQzZDTAmrJAODoSAYwavrJcbYwD58LVfAdOmDX2zXemirKFd7mnLQMij8WtRuZ/t
+		fL5ZpnsIz/iGDSZndFbxqKey6j2sbulsjXHG60INwYF0N5dIhHCo5VeOYz7NEXat
+		7x2n89eNi2awCdid7ArZDNWAqhLFxRreTN8wTR7t3Y0TN9knm7V4ofPPms3KT0Zk
+		Op1QIcB80jLx6rkcSq1ghadUUpiRFr5BNlMR0Oul8XWQ4u0B17TKu59wwVNyeizc
+		vmlt/1L1CQ==
+		-----END CERTIFICATE-----
+		subject=/C=XX/L=Default City/O=Default Company Ltd/CN=instructor.example.com
+		issuer=/C=XX/L=Default City/O=Default Company Ltd/CN=instructor.example.com
+		---
+		No client certificate CA names sent
+		Server Temp Key: ECDH, prime256v1, 256 bits
+		---
+		SSL handshake has read 1610 bytes and written 375 bytes
+		---
+		New, TLSv1/SSLv3, Cipher is ECDHE-RSA-AES256-GCM-SHA384
+		Server public key is 2048 bit
+		Secure Renegotiation IS supported
+		Compression: NONE
+		Expansion: NONE
+		SSL-Session:
+		    Protocol  : TLSv1.2
+		    Cipher    : ECDHE-RSA-AES256-GCM-SHA384
+		    Session-ID: 237566220198BE79A3B0EE9E9D12D3221676329C34F44BF577CC9D77BB6F0C99
+		    Session-ID-ctx:
+		    Master-Key: EFA5C1BC2D6C3EBC3928C2339338D31602E7908A70663C9D18AADB683BFC91BD
+		824D91D857A899A79BF1B95F606FE783
+		    Key-Arg   : None
+		    Krb5 Principal: None
+		    PSK identity: None
+		    PSK identity hint: None
+		    TLS session ticket lifetime hint: 300 (seconds)
+		    TLS session ticket:
+		    0000 - ef 91 60 0f 59 6f 45 28-0b 1c ac ca f0 ab f7 76   ..`.YoE(.......v
+		    0010 - c8 fa 8e 79 b6 c8 47 6a-a3 cf 9c 8b 51 43 1c 8c   ...y..Gj....QC..
+		    0020 - 8b 23 83 0b e1 bc bf 33-65 d2 37 e5 84 15 39 b1   .#.....3e.7...9.
+		    0030 - 02 a3 4c 0d 65 f7 54 a4-20 1c b1 0a 82 c2 5e 84   ..L.e.T. .....^.
+		    0040 - 75 92 04 de 3e 09 60 71-6e 20 f9 8e fc 8e af 85   u...>.`qn ......
+		    0050 - 1d 7f eb 2d 41 ca f0 ff-96 1a 29 e3 ca 9d 7c b6   ...-A.....)...|.
+		    0060 - 04 84 57 1b ab 78 50 65-c8 ed 0d 7b 6f e3 2d 9c   ..W..xPe...{o.-.
+		    0070 - 05 d2 73 24 71 89 14 cc-35 59 f5 11 16 80 a3 0d   ..s$q...5Y......
+		    0080 - 43 b7 53 c3 97 22 25 64-40 eb 42 a0 d3 36 6e 32   C.S.."%d@.B..6n2
+		    0090 - 2b f6 61 35 76 96 cc 12-76 f3 93 d6 e8 16 54 19   +.a5v...v.....T.
+		    00a0 - 7d 9d a2 50 b1 d5 87 12-61 f7 d4 c1 46 19 23 f5   }..P....a...F.#.
+		    00b0 - 41 71 43 32 89 7f 9c 9f-b6 ab e3 71 14 d6 13 f4   AqC2.......q....
+
+		    Start Time: 1408555281
+		    Timeout   : 300 (sec)
+		    Verify return code: 18 (self signed certificate)
+		---
+		read:errno=0
+		SSL3 alert write:warning:close notify
 
 DNS
 
+	Configure a caching-only name server
 
-	Configure a caching-only name server.
+		Install the bind package:
 
-	Configure a caching-only name server to forward DNS queries.
+		# yum install -y bind
+		Edit the /etc/named.conf file and change the listen-on option from 127.0.0.1 to any:
 
-	Note: Candidates are not expected to configure master or slave name servers.
+		listen-on port 53 { any; };
+		In the same file, change the allow-query option from localhost to any:
 
+		allow-query { any; };
+		In the same file, disable the dnssec-validation option:
 
+		dnssec-validation no;
+		Check the configuration file:
 
+		# named-checkconf
+		Add a new service to the firewall:
 
-FTP
+		# firewall-cmd --permanent --add-service=dns
+		success
+		Reload the firewall configuration:
 
+		# firewall-cmd --reload
+		success
+		Activate the DNS service:
 
-	Configure anonymous-only download.
+		# systemctl enable named
+		Start the DNS service:
 
+		# systemctl start named
+		Check the configuration:
 
+		# nslookup cnn.com 127.0.0.1
+		# dig @127.0.0.1 cnn.com
 
+	Troubleshoot DNS client issues
 
 NFS
 
+	Provide network shares to specific clients
 
-	Provide network shares to specific clients.
+		Server side configuration
 
-	Provide network shares suitable for group collaboration.
+		Install the file-server package group:
 
+		# yum groupinstall -y file-server
+		Add a new service to the firewall:
 
+		# firewall-cmd --permanent --add-service=nfs
+		success
+		Reload the firewall configuration:
 
+		# firewall-cmd --reload
+		success
+		Activate the NFS services at boot:
+
+		# systemctl enable rpcbind
+		# systemctl enable nfs-server
+		# systemctl enable nfs-lock
+		Start the NFS services:
+
+		# systemctl start rpcbind
+		# systemctl start nfs-server
+		# systemctl start nfs-lock
+		Create directories to export:
+
+		# mkdir -p /home/tools
+		# mkdir -p /home/guests
+		Edit the /etc/exports file and add the following lines with the name (or IP address) of the client(s):
+
+		/home/tools client1(rw,no_root_squash)
+		/home/guests client2(rw,no_root_squash)
+		Export the directories:
+
+		# exportfs -avr
+		# systemctl restart nfs-server
+		Note: This last command shouldn’t be necessary in the future. But, for the time being, it avoids rebooting.
+
+		Client side configuration
+
+		On the client side, the commands are:
+
+		# yum install -y nfs-utils
+		# mount -t nfs nfsserver:/home/tools /mnt
+
+	Provide network shares suitable for group collaboration
+
+		Install the NFS packages:
+
+		# yum groupinstall -y "file-server"
+		Add a new service to the firewall:
+
+		# firewall-cmd --permanent --add-service=nfs
+		Success
+		Reload the firewall configuration:
+
+		# firewall-cmd --reload
+		Success
+		Activate the NFS services at boot:
+
+		# systemctl enable rpcbind
+		# systemctl enable nfs-server
+		# systemctl enable nfs-lock
+		Start the NFS services:
+
+		# systemctl start rpcbind
+		# systemctl start nfs-server
+		# systemctl start nfs-lock
+		Create a directory to export (here /shared):
+
+		# mkdir /shared
+		Create a dedicated group (here called sharedgrp):
+
+		# groupadd -g 60000 sharedgrp
+		Assign this group to the new directory:
+
+		# chgrp sharedgrp /shared
+		Define permissions:
+
+		# chmod 2770 /shared
+		Edit the /etc/exports file and add the following lines with the name (or IP address) of the client(s):
+
+		/shared client(rw,no_root_squash)
+		Export the directories:
+
+		# exportfs -avr
+		# systemctl restart nfs-server
+		Note1: The client needs to have access to the same group (via LDAP) and be a member of this group.
+		Note2: The last command shouldn’t be necessary in the future. But, for the time being, it avoids rebooting.
+
+	Use Kerberos to control access to NFS network shares
+
+		Prerequisites
+
+		First, you will have to configure a KDC (Kerberos Distribution Center) called here kbserver.example.com.
+
+		Then, you will need two additional servers: a NFS server (here nfsserver.example.com) and a NFS client (here nfsclient.example.com). If you’ve got only two servers/VM, regroup the KDC and the NFS servers on the same machine.
+		Also, to get Kerberos running, NTP synchronization and hostname resolution must be working.
+		It is advisable to set up a master DNS server but if none is working, add the following lines in the /etc/hosts file of each server (replace the specified ip addresses with yours):
+
+		192.168.1.11 kbserver.example.com
+		192.168.1.12 nfsserver.example.com
+		192.168.1.13 nfsclient.example.com
+		NFS server configuration
+
+		Before adding the Kerberos configuration, set up the NFS server (use the nfsserver.example.com hostname in this tutorial).
+
+		Then, you will have to add the Kerberos client configuration (replace kbclient.example.com with nfsserver.example.com in this tutorial).
+
+		Destroy any remaining Kerberos ticket:
+
+		# kdestroy
+		Finally, add the specific NFS part to the principals:
+
+		# kadmin -q "addprinc -randkey nfs/nfsserver.example.com"
+		Authenticating as principal root/admin@EXAMPLE.COM with password.
+		Password for root/admin@EXAMPLE.COM: kerberos
+		WARNING: no policy specified for host/kbclient.example.com@EXAMPLE.COM; defaulting to no policy
+		Principal "host/nfsserver.example.com@EXAMPLE.COM" created.
+		# kadmin -q "ktadd -k /etc/krb5.keytab nfs/nfsserver.example.com"
+		Authenticating as principal root/admin@EXAMPLE.COM with password.
+		Password for root/admin@EXAMPLE.COM: kerberos
+		Entry for principal host/nfsserver.example.com with kvno 2, encryption type aes256-cts-hmac-sha1-96 added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/nfsserver.example.com with kvno 2, encryption type aes128-cts-hmac-sha1-96 added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/nfsserver.example.com with kvno 2, encryption type des3-cbc-sha1 added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/nfsserver.example.com with kvno 2, encryption type arcfour-hmac added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/nfsserver.example.com with kvno 2, encryption type camellia256-cts-cmac added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/nfsserver.example.com with kvno 2, encryption type camellia128-cts-cmac added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/nfsserver.example.com with kvno 2, encryption type des-hmac-sha1 added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/nfsserver.example.com with kvno 2, encryption type des-cbc-md5 added to keytab WRFILE:/etc/krb5.keytab.
+		Edit the /etc/exports file and add the option sec=krb5:
+
+		/home/guests nfsclient.example.com(rw,no_root_squash,sec=krb5)
+		Export the new configuration:
+
+		# exportfs -avr
+		Activate some NFS services at boot:
+
+		# systemctl enable nfs-idmap
+		# systemctl enable nfs-secure-server
+		Start some NFS services:
+
+		# systemctl start nfs-idmap
+		# systemctl start nfs-secure-server
+		NFS client configuration
+
+		Before adding the Kerberos configuration, set up the NFS client (use the nfsclient.example.com hostname in this tutorial).
+
+		Then, you will have to add the Kerberos client configuration (replace kbclient.example.com with nfsclient.example.com in this tutorial).
+
+		Destroy any remaining Kerberos ticket:
+
+		# kdestroy
+		Finally, add the specific NFS part to the principals:
+
+		# kadmin -q "addprinc -randkey nfs/nfsclient.example.com"
+		Authenticating as principal root/admin@EXAMPLE.COM with password.
+		Password for root/admin@EXAMPLE.COM: kerberos
+		WARNING: no policy specified for host/kbclient.example.com@EXAMPLE.COM; defaulting to no policy
+		Principal "host/nfsclient.example.com@EXAMPLE.COM" created.
+		# kadmin -q "ktadd -k /etc/krb5.keytab nfs/nfsclient.example.com"
+		Authenticating as principal root/admin@EXAMPLE.COM with password.
+		Password for root/admin@EXAMPLE.COM: kerberos
+		Entry for principal host/nfsclient.example.com with kvno 2, encryption type aes256-cts-hmac-sha1-96 added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/nfsclient.example.com with kvno 2, encryption type aes128-cts-hmac-sha1-96 added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/nfsclient.example.com with kvno 2, encryption type des3-cbc-sha1 added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/nfsclient.example.com with kvno 2, encryption type arcfour-hmac added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/nfsclient.example.com with kvno 2, encryption type camellia256-cts-cmac added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/nfsclient.example.com with kvno 2, encryption type camellia128-cts-cmac added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/nfsclient.example.com with kvno 2, encryption type des-hmac-sha1 added to keytab WRFILE:/etc/krb5.keytab.
+		Entry for principal host/nfsclient.example.com with kvno 2, encryption type des-cbc-md5 added to keytab WRFILE:/etc/krb5.keytab.
+		Activate some NFS services at boot:
+
+		# systemctl enable nfs-idmap
+		# systemctl enable nfs-secure
+		Start some NFS services:
+
+		# systemctl start nfs-idmap
+		# systemctl start nfs-secure
+		Mount the remote directory:
+
+		# mount -t nfs4 -o sec=krb5 nfsserver.example.com:/home/guests /mnt
 
 SMB
 
+	Provide network shares to specific clients
 
-	Provide network shares to specific clients.
+		Install the Samba packages:
 
-	Provide network shares suitable for group collaboration.
+		# yum groupinstall -y "file-server"
+		# yum install -y samba-client samba-winbind
+		Create a new /etc/samba/smb.conf file and add the following lines (for a workgroup named MYGROUP, a server called MYSERVER, a local network with IP addresses in 192.168.1.0/24, a user named user01 and a share called shared):
 
+		workgroup = MYGROUP
+		server string = Samba Server Version %v
+		netbios name = MYSERVER
+		interfaces = lo eth0 192.168.1.0/24
+		hosts allow = 127. 192.168.1.
+		log file = /var/log/samba/log.%m
+		max log size = 50
+		security = user
+		passdb backend = tdbsam
+		[shared]
+		comment = Shared directory
+		browseable = yes
+		path = /shared
+		valid users = user01
+		writable = yes
+		Note: with “passdb backend = tdbsam“, passwords are stored in the /var/lib/samba/private/passdb.tdb file.
 
+		Check the syntax of the configuration file:
 
+		# testparm
+		Load smb config files from /etc/samba/smb.conf
+		rlimit_max: increasing rlimit_max (1024) to minimum Windows limit (16384)
+		Processing section "[shared]"
+		Loaded services file OK.
+		Server role: ROLE_STANDALONE
+		Press enter to see a dump of your service definitions
+
+		[global]
+		    workgroup = MYGROUP
+		    netbios name = MYSERVER
+		    server string = Samba Server Version %v
+		    interfaces = lo, eth0, 192.168.1.0/24
+		    log file = /var/log/samba/log.%m
+		    max log size = 50
+		    idmap config * : backend = tdb
+		    hosts allow = 127., 192.168.1.
+
+		[shared]
+		    comment = Shared directory
+		    path = /shared
+		    valid users = user01
+		    read only = No
+		Create the shared directory:
+
+		# mkdir /shared
+		Create a file inside called test:
+
+		# echo "This is a test." > /shared/test
+		Set up the correct SELinux context:
+
+		# yum install -y setroubleshoot-server
+		# semanage fcontext -a -t samba_share_t "/shared(/.*)?"
+		# restorecon -R /shared
+		Add the new service to the firewall:
+
+		# firewall-cmd --permanent --add-service=samba
+		Reload the firewall configuration:
+
+		# firewall-cmd --reload
+		Activate the Samba services at boot:
+
+		# systemctl enable smb
+		# systemctl enable nmb
+		# systemctl enable winbind
+		Start the Samba services:
+
+		# systemctl start smb
+		# systemctl start nmb
+		# systemctl start winbind
+		Create the samba user user01 with the password pass:
+
+		# useradd -s /sbin/nologin user01
+		# smbpasswd -a user01
+		New SMB password: pass
+		Retype new SMB password: pass
+		Added user user01.
+		Check the configuration:
+
+		# smbclient //localhost/shared -U user01%pass
+		Domain=[MYGROUP] OS=[Unix] Server=[Samba 4.1.1]
+		smb: \> ls
+		  .                                   D        0  Sun Aug  3 00:19:00 2014
+		  ..                                  D        0  Sat Aug  2 23:16:27 2014
+		  test                                N        0  Sun Aug  3 00:15:20 2014
+
+		        47356 blocks of size 65536. 26414 blocks available
+
+	Provide network shares suitable for group collaboration
+
+		In sharp contrast to the similar objective for NFS, this objective is clearly defined and easily achievable.
+
+		I have added a group called Users to my system and created a few users giving them the group Users as a supplemental group (e.g. useradd -G Users auser). Created a samba password for these users and then added the following to my /etc/samba/smb.conf file:
+		[myothershare]
+		browseable=yes
+		path = /myshareddirectory
+		force group = +Users
+		valid users = @Users myuser
+		write list = @Users
+		create mask = 0770
+		force create mode =660
+
+		Now, let's set SELinux settings (I'm assuming that you have already set samba_export_all_ro as per my previous post):
+		 setsebool -P samba_export_all_rw 1
+
+		And the security context type:
+		 chcon -t samba_share_t /myshareddirectory/
+
+		Let's set ownerships and permissions:
+		   chgrp Users /myshareddirectory/
+		   chmod -R 770 /myshareddirectory/
+
+		You can now,assuming that your server is 192.168.1.64, finally, mount the share with (you might need to install cifs-utils):
+		mount.cifs //192.168.1.64/mycolshare /test -o user=myuser
+
+		When you create a file now it should have rw permissions for both owner and group and thus files should be read and writeable for any users in the Users group.
+
+		-rw-rw----. 1 502 501 0 Jul  8 20:45 createdbyanotheruser
+		-rw-rw----. 1 501 501 0 Jul  8 21:02 createdbyauser
+
+	Use Kerberos to authenticate access to shared directories
 
 SMTP
 
+	Configure a system to forward all email to a central mail server
 
-	Configure a mail transfer agent (MTA) to accept inbound email from other systems.
+		Configure a master name server.
 
-	Configure an MTA to forward (relay) email through a smart host.
+		Install the bind package:
+
+		# yum install -y bind
+		Edit the /etc/named.conf file and change the listen-on option from 127.0.0.1 to any:
+
+		listen-on port 53 { any; };
+		In the same file, change the allow-query option from localhost to any:
+
+		allow-query { any; };
+		In the same file, disable the dnssec-validation option:
+
+		dnssec-validation no;
+		Still in the same file, below the recursion option, add the two following lines (with 192.168.1.1 being the DNS IP address of your operator):
+
+		forward only;
+		forwarders { 192.168.1.1; };
+		After the logging stanza and still in the /etc/named.conf file, add the following lines (example.com is supposed to be your domain name):
+
+		zone "example.com" {
+		type master;
+		file "example.com.zone";
+		allow-update { none; };
+		};
+
+		zone "1.168.192.in-addr.arpa" {
+		type master;
+		file "example.com.revzone";
+		allow-update { none; };
+		};
+		Create the /var/named/example.com.zone file and insert the following lines (where gateway is your gateway to Internet, dns your DNS server, mail your mail server and client a simple client):
+
+		$TTL 86400
+		@ IN SOA dns.example.com. root.example.com. (
+		 2014080601 ; Serial
+		 1d ; refresh
+		 2h ; retry
+		 4w ; expire
+		 1h ) ; min cache
+		 IN NS dns.example.com.
+		 IN MX 10 mail.example.com.
+
+		gateway    IN A 192.168.1.1
+		dns            IN A 192.168.1.5
+		mail           IN A 192.168.1.10
+		client         IN A 192.168.1.15
+		Note1: IN NS indicates a name server, IN MX a mail server.
+		Note2: It is a good practice to put the date in the Serial field and increase it (only the last two digits) when changes are required (if you don’t increase them, no changes will be taken into account even after restarting the named service).
+
+		Create the /var/named/example.com.revzone file and insert the following lines:
+
+		$TTL 86400
+		@ IN SOA dns.example.com. root.example.com. (
+		 2014080601 ; Serial
+		 1d ; refresh
+		 2h ; retry
+		 4w ; expire
+		 1h ) ; min cache
+		 IN NS dns.example.com.
+
+		1     IN PTR gateway.example.com.
+		5     IN PTR dns.example.com.
+		10    IN PTR mail.example.com.
+		15    IN PTR client.example.com.
+		Check the configuration files:
+
+		# named-checkconf
+		Add the new service to the firewall:
+
+		# firewall-cmd --permanent --add-service=dns
+		Success
+		Reload the firewall configuration:
+
+		# firewall-cmd --reload
+		Success
+		Activate the DNS service at boot:
+
+		# systemctl enable named
+		Start the DNS service:
+
+		# systemctl start named
+		Check the configuration:
+
+		# nslookup cnn.com 127.0.0.1
+		Server:        127.0.0.1
+		Address:    127.0.0.1#53
+
+		Non-authoritative answer:
+		Name:    cnn.com
+		Address: 157.166.226.25
+		Name:    cnn.com
+		Address: 157.166.226.26
+
+		# dig @127.0.0.1 cnn.com
+		; <<>> DiG 9.9.4-RedHat-9.9.4-14.el7 <<>> @127.0.0.1 cnn.com
+		; (1 server found)
+		;; global options: +cmd
+		;; Got answer:
+		;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 41414
+		;; flags: qr rd ra; QUERY: 1, ANSWER: 2, AUTHORITY: 13, ADDITIONAL: 13
+
+		;; OPT PSEUDOSECTION:
+		; EDNS: version: 0, flags:; udp: 4096
+		;; QUESTION SECTION:
+		;cnn.com.            IN    A
+
+		;; ANSWER SECTION:
+		cnn.com.        152    IN    A    157.166.226.26
+		cnn.com.        152    IN    A    157.166.226.25
+
+		;; AUTHORITY SECTION:
+		com.            125267    IN    NS    c.gtld-servers.net.
+		com.            125267    IN    NS    i.gtld-servers.net.
+		com.            125267    IN    NS    a.gtld-servers.net.
+		com.            125267    IN    NS    k.gtld-servers.net.
+		com.            125267    IN    NS    f.gtld-servers.net.
+		com.            125267    IN    NS    m.gtld-servers.net.
+		com.            125267    IN    NS    l.gtld-servers.net.
+		com.            125267    IN    NS    d.gtld-servers.net.
+		com.            125267    IN    NS    j.gtld-servers.net.
+		com.            125267    IN    NS    e.gtld-servers.net.
+		com.            125267    IN    NS    g.gtld-servers.net.
+		com.            125267    IN    NS    b.gtld-servers.net.
+		com.            125267    IN    NS    h.gtld-servers.net.
+
+		;; ADDITIONAL SECTION:
+		i.gtld-servers.net.    9799    IN    A    192.43.172.30
+		m.gtld-servers.net.    5154    IN    A    192.55.83.30
+		f.gtld-servers.net.    11700    IN    A    192.35.51.30
+		d.gtld-servers.net.    16095    IN    A    192.31.80.30
+		g.gtld-servers.net.    5325    IN    A    192.42.93.30
+		h.gtld-servers.net.    5345    IN    A    192.54.112.30
+		j.gtld-servers.net.    5108    IN    A    192.48.79.30
+		c.gtld-servers.net.    13522    IN    A    192.26.92.30
+		l.gtld-servers.net.    6529    IN    A    192.41.162.30
+		e.gtld-servers.net.    6040    IN    A    192.12.94.30
+		k.gtld-servers.net.    10294    IN    A    192.52.178.30
+		b.gtld-servers.net.    3807    IN    AAAA    2001:503:231d::2:30
+
+		;; Query time: 70 msec
+		;; SERVER: 127.0.0.1#53(127.0.0.1)
+		;; WHEN: Wed Aug 06 13:00:29 CEST 2014
+		;; MSG SIZE  rcvd: 496
 
 
+		Install the postfix package (if it is not already there):
 
+			# yum install -y postfix
+			Add a new service to the firewall:
+
+			# firewall-cmd --permanent --add-service=smtp
+			Success
+			Reload the firewall configuration:
+
+			# firewall-cmd --reload
+			Success
+			Activate the postfix service at boot:
+
+			# systemctl enable postfix
+			Start the postfix service:
+
+			# systemctl restart postfix
+			Let’s assume that your server is called mail.example.com on the 192.168.1.0/24 network.
+			Edit the /etc/postfix/main.cf file and change the following directives:
+
+			myhostname = mail.example.com
+			mydomain = example.com
+			myorigin = $mydomain
+			inet_interfaces = all
+			mydestination = $mydomain, $myhostname, localhost.$mydomain, localhost
+			mynetworks = 192.168.1.0/24, 127.0.0.0/8
+			Check the syntax:
+
+			# postfix check
+			Check the non-default configuration:
+
+			# postconf -n
+			Set the SELinux allow_postfix_local_write_mail_spool boolean to ‘on‘:
+
+			# setsebool -P allow_postfix_local_write_mail_spool on
+			Restart the postfix configuration:
+
+			# systemctl restart postfix
+			Test from a client with the nmap command, it should display: “25/tcp open smtp“:
+
+			# yum install -y nmap
+			# nmap mail.example.com
+			Starting Nmap 6.40 ( http://nmap.org ) at 2014-08-05 23:41 CEST
+			Nmap scan report for mail.example.com (192.168.1.24)
+			Host is up (0.00076s latency).
+			Not shown: 998 filtered ports
+			PORT   STATE SERVICE
+			22/tcp open  ssh
+			25/tcp open  smtp
+			MAC Address: 52:54:00:44:23:51 (QEMU Virtual NIC)
+
+			Nmap done: 1 IP address (1 host up) scanned in 6.16 seconds
+			Alternatively, test from a client with the telnet command:
+
+			# yum install -y telnet
+			# telnet mail.example.com 25
+			Trying 192.168.1.24...
+			Connected to mail.example.com.
+			Escape character is '^]'.
+			220 mail.example.com ESMTP Postfix
+			HELO client
+			250 mail.example.com
+			quit
+			221 2.0.0 Bye
+			Connection closed by foreign host.
+			On the central mail server, create a user called me:
+
+			# adduser me
+			From a client, send a mail to me:
+
+			# echo "This is a test." | mail -s "Subject: Test" me@example.com
+			From the central mail server:
+
+			# su - me
+			$ mail
+			Heirloom Mail version 12.5 7/5/10.  Type ? for help.
+			"/var/spool/mail/me": 1 message 1 new
+			>N  1 root                  Tue Aug  5 23:47  21/785   "Subject: Test"
 
 SSH
 
+	Configure key-based authentication
 
-	Configure key-based authentication.
+		Instead of connecting through login/password to a remote host, SSH allows you to use key-based authentication. To set up key-based authentication, you need two virtual/physical servers that we will call server1 and server2. On the server1, create a user user01 with password user01:
 
-	Configure additional options described in documentation.
+		# useradd user01
+		# passwd user01
+		Changing password for user user01.
+		New password: your password
+		Retype new password: your password
+		passwd: all authentication tokens updated successfully.
+		On the server2, create the same user with password user01:
 
+		# useradd user01
+		# passwd user01
+		Changing password for user user01.
+		New password: your password
+		Retype new password: your password
+		passwd: all authentication tokens updated successfully.
+		On the server1, connect as this new user:
 
+		# su - user01
+		Generate a private/public pair for key-based authentication (here rsa key with 2048 bits and no passphrase):
 
+		[user01@server1 ~]$ ssh-keygen -b 2048 -t rsa
+		Generating public/private rsa key pair.
+		Enter file in which to save the key (/home/user01/.ssh/id_rsa): return
+		Created directory '/home/user01/.ssh'.
+		Enter passphrase (empty for no passphrase): return
+		Enter same passphrase again: return
+		Your identification has been saved in /home/user01/.ssh/id_rsa.
+		Your public key has been saved in /home/user01/.ssh/id_rsa.pub.
+		The key fingerprint is:
+		6d:ac:45:32:34:ac:da:4a:3b:4e:f2:83:85:84:5f:d8 user01@server1.example.com
+		The key's randomart image is:
+		+--[ RSA 2048]----+
+		|       .o        |
+		|       ...       |
+		| . o   .o .      |
+		|. o E .  *       |
+		| o o o  S =      |
+		|  o + .  +       |
+		|  .+.o  .        |
+		|  .+=            |
+		|   .oo           |
+		+-----------------+
+		Still on server1, copy the public key to server2.
+
+		[user01@server1 ~]$ ssh-copy-id -i .ssh/id_rsa.pub user01@server2.example.com
+		The authenticity of host 'server2.example.com (192.168.1.49)' can't be established.
+		ECDSA key fingerprint is 67:79:67:88:7f:da:31:49:7b:dd:ed:40:af:ae:b6:ae.
+		Are you sure you want to continue connecting (yes/no)? yes
+		/bin/ssh-copy-id: INFO: attempting to log in with the new key(s), to filter out any that are already installed
+		/bin/ssh-copy-id: INFO: 1 key(s) remain to be installed -- if you are prompted now it is to install the new keys
+		user01@server2.example.com's password: 
+
+		Number of key(s) added: 1
+
+		Now try logging into the machine, with:   "ssh 'user01@server2.example.com'"
+		and check to make sure that only the key(s) you wanted were added.
+		On the server2, edit the /etc/ssh/sshd_config file and set the following options:
+
+		PasswordAuthentication no
+		PubkeyAuthentication yes
+		Note: Don’t hesitate to set up a virtual console access on server2, this will avoid re-installing the physical/virtual server if something goes wrong. Restart the sshd service:
+
+		# systemctl restart sshd
+		On the server1 as user01, connect to the server2:
+
+		[user01@server1 ~]$ ssh server2.example.com
+		Note: This configuration can also be done for the root account.
+	
+	Configure additional options described in documentation
+
+		Install the SSH service if it is not already there:
+
+		# yum install -y openssh-server
+		Activate the SSH service at boot:
+
+		# systemctl enable sshd
+		Start the SSH service:
+
+		# systemctl start sshd
+		Add a new service to the firewall:
+
+		# firewall-cmd --permanent --add-service=ssh
+		Reload the firewall configuration:
+
+		# firewall-cmd --reload
+		Let’s open the /etc/ssh/sshd_config file and discuss its content:
+
+		Port 22                                 # defines listening port for ssh
+		AddressFamily any                       # accepts IPv4 et IPv6 addresses
+		ListenAddress 0.0.0.0                   # allows ssh to listen on all network interfaces
+		ListenAddress ::                        # listens on IPv6 addresses too
+		Protocol 2                              # defines version of ssh (version 1 is not used any more)
+		SyslogFacility AUTHPRIV                 # stores logging attempts in /var/log/secure (see rsyslog.conf file)
+		LoginGraceTime 2m                       # sets the time to connect
+		PermitRootLogin yes                     # allows direct login as root: outside lab, this option should be set to 'no'
+		StrictModes yes                         # allows connection only if the user's home directory is not world-writable
+		MaxAuthTries 6                          # defines the number of authentication attempts allowed
+		MaxSessions 10                          # defines the limit of simultaneous open connections
+		PubKeyAuthentication yes                # enables public key authentication
+		AuthorizedKeysFile .ssh/authorized_keys # defines the location of the authorized-keys file
+		HostbasedAuthentication no              # forbids the use of /etc/hosts.equiv
+		IgnoreUserKnownHosts no                 # reads the .ssh/known_hosts at each connection
+		IgnoreRhosts yes                        # doesn't read user's ~/.rhosts file
+		PasswordAuthentication yes              # sets password-based authentication
+		PermitEmptyPasswords no                 # doesn't allow empty passwords (hopefully!)
+		ChallengeResponseAuthentication no      # forbids use of one-time passwords
+		UsePAM yes                              # enables the Pluggable Authentication Module interface
+		AllowAgentForwarding yes                # allows the ssh-agent to forward private keys
+		AllowTCPForwarding yes                  # allows TCP communications to be forwarded
+		GatewayPorts no                         # prevents remote hosts from connecting to ports forwarded for the client
+		X11Forwarding yes                       # enables X11 forwarding
+		X11DisplayOffset 10                     # limits the number of GUI display open at the same time
+		X11UseLocalhost yes                     # defines how the GUI display is bound to the SSH server
+		PrintMotd yes                           # displays the message of the day
+		PrintLastLog yes                        # displays the date of the last login
+		TCPKeepAlive yes                        # allows the system to send TCP keepalive messages
+		UseLogin no                             # specifies whether login is used for interactive login session
+		UsePrivilegeSeparation yes              # separates incoming network traffic processing from the rest
+		PermitUserEnvironment no                # doesn't deal with environment options
+		Compression delayed                     # specifies that compression is delayed until user authentication
+		ClientAliveInterval 0                   # doesn't send any message before client deconnection
+		ClientAliveCountMax 3                   # defines the number of messages before client deconnection
+		-                                       # if ClientAliveInterval is different from 0
+		UseDNS yes                              # checks remote hostnames against DNS
+		PidFile /var/run/sshd.pid               # defines the file where the SSH process ID is stored
+		MaxStartups 10                          # defines the number of terminals simultaneously allowed
+		PermitTunnel no                         # doesn't support device forwarding
+		ChrootDirectory none                    # disables the use of chroot
+		Subsystem sftp /usr/libexec/openssh/sftp-server # supports the use of SSH encryption for SFTP file transfers
 
 NTP
 
+	Synchronize time using other NTP peers
 
-	Synchronize time using other NTP peers.
+		Install the NTP package:
+
+		# yum install -y ntp
+		Activate the NTP service at boot:
+
+		# systemctl enable ntpd
+		Start the NTP service:
+
+		# systemctl start ntpd
+		The NTP configuration is in the /etc/ntp.conf file.
+
+		To get information about the time synchronization process, type:
+
+		# ntpq -p
+		     remote           refid      st t when poll reach   delay   offset  jitter
+		==============================================================================
+		*y.ns.gin.ntt.ne 192.93.2.20      2 u   47   64  377   27.136    6.958  11.322
+		+ns1.univ-montp3 192.93.2.20      2 u   45   64  377   34.836   -0.009  11.463
+		+merlin.ensma.ne 193.204.114.232  2 u   48   64  377   34.586    4.443  11.370
+		+obsidian.ad-not 131.188.3.220    2 u   50   64  377   22.548    4.256  12.077
+		To quickly synchronize a server, type:
+
+		# systemctl stop ntpd
+		# ntpdate pool.ntp.org
+		 5 Jul 10:36:58 ntpdate[2190]: adjust time server 95.81.173.74 offset -0.005354 sec
+		# systemctl start ntpd
+		Alternatively, you can install the new chrony service that is quicker to synchronize clocks in mobile and virtual systems.
+
+		Install the chrony service:
+
+		# yum install -y chrony
+		Activate the chrony service at boot:
+
+		# systemctl enable chronyd
+		Start the chrony service:
+
+		# systemctl start chronyd
+		The Chrony configuration is in the /etc/chrony.conf file.
+
+		To get information about the main time reference, type:
+
+		# chronyc tracking
+		Reference ID    : 94.23.44.157 (merzhin.deuza.net)
+		Stratum         : 3
+		Ref time (UTC)  : Thu Jul  3 22:26:27 2014
+		System time     : 0.000265665 seconds fast of NTP time
+		Last offset     : 0.000599796 seconds
+		RMS offset      : 3619.895751953 seconds
+		Frequency       : 0.070 ppm slow
+		Residual freq   : 0.012 ppm
+		Skew            : 0.164 ppm
+		Root delay      : 0.030609 seconds
+		Root dispersion : 0.005556 seconds
+		Update interval : 1026.9 seconds
+		Leap status     : Normal
+		To get equivalent information to the ntpq command, type:
+
+		# chronyc sources -v
+		210 Number of sources = 4
+
+		  .-- Source mode  '^' = server, '=' = peer, '#' = local clock.
+		 / .- Source state '*' = current synced, '+' = combined , '-' = not combined,
+		| /   '?' = unreachable, 'x' = time may be in error, '~' = time too variable.
+		||                                                 .- xxxx [ yyyy ] +/- zzzz
+		||                                                /   xxxx = adjusted offset,
+		||         Log2(Polling interval) -.             |    yyyy = measured offset,
+		||                                  \            |    zzzz = estimated error.
+		||                                   |           |
+		MS Name/IP address         Stratum Poll Reach LastRx Last sample
+		===============================================================================
+		^+ merlin.ensma.fr               2   6    77    61   +295us[+1028us] +/-   69ms
+		^* lafkor.de                     2   6    77    61  -1371us[ -638us] +/-   65ms
+		^+ kimsuflol.iroqwa.org          3   6    77    61   -240us[ -240us] +/-   92ms
+		^+ merzhin.deuza.net             2   6    77    61    +52us[  +52us] +/-   48ms
+
+		# chronyc sourcestats -v
+		210 Number of sources = 4
+		                             .- Number of sample points in measurement set.
+		                            /    .- Number of residual runs with same sign.
+		                           |    /    .- Length of measurement set (time).
+		                           |   |    /      .- Est. clock freq error (ppm).
+		                           |   |   |      /           .- Est. error in freq.
+		                           |   |   |     |           /         .- Est. offset.
+		                           |   |   |     |          |          |   On the -.
+		                           |   |   |     |          |          |   samples. \
+		                           |   |   |     |          |          |             |
+		Name/IP Address            NP  NR  Span  Frequency  Freq Skew  Offset  Std Dev
+		==============================================================================
+		merlin.ensma.fr             7   5   200      0.106      6.541   +381us   176us
+		lafkor.de                   7   4   199      0.143     10.145   -916us   290us
+		kimsuflol.iroqwa.org        7   7   200     -0.298      6.717    +69us   184us
+		merzhin.deuza.net           7   5   200      0.585     11.293   +675us   314us
+		To quickly synchronize a server, type:
+
+		# ntpdate pool.ntp.org
+		 5 Jul 10:31:06 ntpdate[2135]: step time server 193.55.167.1 offset 121873.493146 sec
+
+Database services
+
+	Install and configure MariaDB
+
+		MariaDB is a binary replacement for MySql, the famous database system. To install it, apply the following steps:
+
+		Install the MariaDB packages:
+
+		# yum install -y mariadb mariadb-server
+		Activate at boot and start the MariaDB service:
+
+		# systemctl enable mariadb
+		# systemctl start mariadb
+		Execute the basic setup:
+
+		# mysql_secure_installation
+		/usr/bin/mysql_secure_installation: line 379: find_mysql_client: command not found
+
+		NOTE: RUNNING ALL PARTS OF THIS SCRIPT IS RECOMMENDED FOR ALL MariaDB
+		SERVERS IN PRODUCTION USE! PLEASE READ EACH STEP CAREFULLY!
+
+		In order to log into MariaDB to secure it, we'll need the current
+		password for the root user. If you've just installed MariaDB, and
+		you haven't set the root password yet, the password will be blank,
+		so you should just press enter here.
+
+		Enter current password for root (enter for none): type enter
+		OK, successfully used password, moving on...
+
+		Setting the root password ensures that nobody can log into the MariaDB
+		root user without the proper authorisation.
+
+		Set root password? [Y/n] Y
+		New password: your-password
+		Re-enter new password: your-password
+		Password updated successfully!
+		Reloading privilege tables..
+		... Success!
+
+		By default, a MariaDB installation has an anonymous user, allowing anyone
+		to log into MariaDB without having to have a user account created for
+		them. This is intended only for testing, and to make the installation
+		go a bit smoother. You should remove them before moving into a
+		production environment.
+
+		Remove anonymous users? [Y/n] Y
+		... Success!
+
+		Normally, root should only be allowed to connect from 'localhost'. This
+		ensures that someone cannot guess at the root password from the network.
+
+		Disallow root login remotely? [Y/n] Y
+		... Success!
+
+		By default, MariaDB comes with a database named 'test' that anyone can
+		access. This is also intended only for testing, and should be removed
+		before moving into a production environment.
+
+		Remove test database and access to it? [Y/n] Y
+		- Dropping test database...
+		... Success!
+		- Removing privileges on test database...
+		... Success!
+
+		Reloading the privilege tables will ensure that all changes made so far
+		will take effect immediately.
+
+		Reload privilege tables now? [Y/n] Y
+		... Success!
+
+		Cleaning up...
+
+		All done! If you've completed all of the above steps, your MariaDB
+		installation should now be secure.
+
+		Thanks for using MariaDB!
+		If you need to access the database from a different server, add the MySql service to the firewall configuration and reload it:
+
+		# firewall-cmd --permanent --add-service=mysql
+		success
+		# firewall-cmd --reload
+		success
+		Additional information about the transition from MySQL to MariaDB is available on Kolbe’s blog.
+		Carla Schroder’s blog provides some thought about which type of file system to choose and what are the best parameters to set performance-wise.
+
+	Backup and restore a database
+
+		First, you need to install a MariaDB database.
+
+		Then, you need to create a simple database schema, otherwise you will have nothing to back up.
+
+		To back up the database called test, type:
+
+		# mysqldump --user=user --password="your password" --result-file=test.sql test
+		You get the following content in the test.sql file:
+
+		-- MySQL dump 10.14  Distrib 5.5.35-MariaDB, for Linux (x86_64)
+		--
+		-- Host: localhost    Database: test
+		-- ------------------------------------------------------
+		-- Server version	5.5.35-MariaDB
+
+		/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+		/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+		/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+		/*!40101 SET NAMES utf8 */;
+		/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+		/*!40103 SET TIME_ZONE='+00:00' */;
+		/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+		/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 
+		*/;
+		/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+		/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+		--
+		-- Table structure for table `addresses`
+		--
+
+		DROP TABLE IF EXISTS `addresses`;
+		/*!40101 SET @saved_cs_client     = @@character_set_client */;
+		/*!40101 SET character_set_client = utf8 */;
+		CREATE TABLE `addresses` (
+		  `name` varchar(20) DEFAULT NULL,
+		  `address` varchar(40) DEFAULT NULL
+		) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+		/*!40101 SET character_set_client = @saved_cs_client */;
+
+		--
+		-- Dumping data for table `addresses`
+		--
+
+		LOCK TABLES `addresses` WRITE;
+		/*!40000 ALTER TABLE `addresses` DISABLE KEYS */;
+		/*!40000 ALTER TABLE `addresses` ENABLE KEYS */;
+		UNLOCK TABLES;
+		/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+		/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+		/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+		/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+		/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+		/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+		/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+		/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+		-- Dump completed on 2014-07-16 12:42:41
+		Now, to restore the same content into the database, type:
+
+		# mysql -u user --password="your password" test<test.sql
+		Note: The content of the SQL file (here called test.sql) automatically deals with database/table re-creation.
+
+	Create a simple database schema
+
+		Then, you have to connect to the server with the password you created previously:
+
+		# mysql -u root -p
+		Enter password: your password
+		Welcome to the MariaDB monitor.  Commands end with ; or \g.
+		Your MariaDB connection id is 10
+		Server version: 5.5.35-MariaDB MariaDB Server
+
+		Copyright (c) 2000, 2013, Oracle, Monty Program Ab and others.
+
+		Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+		MariaDB [(none)]>
+		Now, you can create a database (here called test):
+
+		MariaDB [(none)]> create database test;
+		Query OK, 1 row affected (0.00 sec)
+		Note: Use the drop database command to remove a database.
+
+		Give permissions to the user called user:
+
+		MariaDB [(none)]> grant all on test.* to user@localhost identified by 'your password';
+		Query OK, 0 rows affected (0.00 sec)
+
+		MariaDB [(none)]> flush privileges;
+		Query OK, 0 rows affected (0.00 sec)
+		Note: There is a password associated with the root account required during the server installation process. Then, there is another password linked to the database owner (here user). It’s easier if both are the same but they don’t need to.
+
+		Exit the MariaDB command line:
+
+		MariaDB [(none)]> quit
+		Bye
+		Finally, you can connect to your own database directly:
+
+		# mysql -u user -p test
+		Enter password: your password
+		Welcome to the MariaDB monitor.  Commands end with ; or \g.
+		Your MariaDB connection id is 12
+		Server version: 5.5.35-MariaDB MariaDB Server
+
+		Copyright (c) 2000, 2013, Oracle, Monty Program Ab and others.
+
+		Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+		MariaDB [test]>
+		To create a table called addresses, type:
+
+		MariaDB [test]> create table addresses(name varchar(20), address varchar(40));
+		Query OK, 0 rows affected (0.14 sec)
+		Note: Use the drop table command to remove a table.
+
+		To get the list of all the available databases, type:
+
+		MariaDB [test]> show databases;
+		+--------------------+
+		| Database           |
+		+--------------------+
+		| information_schema |
+		| test               |
+		+--------------------+
+		2 rows in set (0.00 sec)
+		Note: You can go inside a database with the use command. For example, type use test; to go to your new database.
+
+		To get the list of all the tables created in your database, type:
+
+		MariaDB [test]> show tables;
+		+----------------+
+		| Tables_in_test |
+		+----------------+
+		| addresses      |
+		+----------------+
+		1 row in set (0.00 sec)
+
+	Perform simple SQL queries against a database
+
+		First, you need to install a MariaDB database.
+		Then, you have to create a simple database schema.
+
+		Now, you need to connect to your database (here called test):
+
+		# mysql -u user -p test
+		Enter password: your password
+		Reading table information for completion of table and column names
+		You can turn off this feature to get a quicker startup with -A
+
+		Welcome to the MariaDB monitor.  Commands end with ; or \g.
+		Your MariaDB connection id is 18
+		Server version: 5.5.35-MariaDB MariaDB Server
+
+		Copyright (c) 2000, 2013, Oracle, Monty Program Ab and others.
+
+		Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+		MariaDB [test]>
+		You can check the presence of the table, previously created, called addresses:
+
+		MariaDB [test]> desc addresses;
+		+---------+-------------+------+-----+---------+-------+
+		| Field   | Type        | Null | Key | Default | Extra |
+		+---------+-------------+------+-----+---------+-------+
+		| name    | varchar(20) | YES  |     | NULL    |       |
+		| address | varchar(40) | YES  |     | NULL    |       |
+		+---------+-------------+------+-----+---------+-------+
+		2 rows in set (0.00 sec)
+		Data insertion
+
+		You can insert some data into the table called addresses:
+
+		MariaDB [test]> insert addresses values("James","address1");
+		Query OK, 1 row affected (0.02 sec)
+
+		MariaDB [test]> insert addresses values("Bill","address2");
+		Query OK, 1 row affected (0.02 sec)
+		Data selection
+
+		Now, you can get James‘ address:
+
+		MariaDB [test]> select address from addresses where name="James";
+		+----------+
+		| address  |
+		+----------+
+		| address1 |
+		+----------+
+		1 row in set (0.00 sec)
+		You can also get all the records ordered by name in an ascending order (ASC is the default order and can be omitted):
+
+		MariaDB [test]> select * from addresses order by name ASC;
+		+-------+----------+
+		| name  | address  |
+		+-------+----------+
+		| Bill  | address2 |
+		| James | address1 |
+		+-------+----------+
+		2 rows in set (0.00 sec)
+		Data update
+
+		You can replace the name “Bill” with “John“:
+
+		MariaDB [test]> update addresses set name="John" where name="Bill";
+		Query OK, 1 row affected (0.02 sec)
+		Rows matched: 1  Changed: 1  Warnings: 0
+
+		MariaDB [test]> select * from addresses order by name DESC;
+		+-------+----------+
+		| name  | address  |
+		+-------+----------+
+		| John  | address2 |
+		| James | address1 |
+		+-------+----------+
+		2 rows in set (0.00 sec)
+		Note: DESC specifies a descending order.
+
+		Data removal
+
+		You can also delete James‘ record:
+
+		MariaDB [test]> delete from addresses where name="James";
+		Query OK, 1 row affected (0.02 sec)
+
+		MariaDB [test]> select * from addresses;
+		+------+----------+
+		| name | address  |
+		+------+----------+
+		| John | address2 |
+		+------+----------+
+		1 row in set (0.00 sec)
+		This is a very basic tutorial. A lot of other operations are available for a database software like MariaDB. A complete documentation can be found on the MySQL website.
+
+

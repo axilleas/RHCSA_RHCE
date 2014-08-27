@@ -1,0 +1,28 @@
+Practice Routines
+
+
+User and Group setup
+
+
+	- Create skeleton records for each new user to have by default in their home folders
+
+		/home/user/projects/
+		/home/user/personal/
+
+
+	- Create three users for the system, and assign their passwords.
+
+		Larry - password
+		Moe - password
+		Curly - password
+
+
+	- Create the following groups and assign the users listed underneath to that group.
+
+		Admin
+			Larry
+
+		Other
+			Moe
+			Curly
+

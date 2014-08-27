@@ -1,0 +1,125 @@
+#~#~#  System Configuration and Management  #~#~#
+
+_____________________________________________________________________
+
+Use network teaming or bonding to configure aggregated network links between two Red Hat Enterprise Linux systems
+_____________________________________________________________________
+
+_____________________________________________________________________
+
+Configure IPv6 addresses and perform basic IPv6 troubleshooting
+_____________________________________________________________________
+
+_____________________________________________________________________
+
+Route IP traffic and create static routes
+_____________________________________________________________________
+
+_____________________________________________________________________
+
+Use firewalld and associated mechanisms such as rich rules, zones and custom rules, to implement packet filtering and configure network address translation (NAT)
+_____________________________________________________________________
+
+_____________________________________________________________________
+
+Use /proc/sys and sysctl to modify and set kernel runtime parameters
+_____________________________________________________________________
+
+
+
+For example, kernel forwarding packets option
+
+Open sysctl file
+
+vi /etc/sysctl.conf
+
+add the line
+
+net.ipv4.ip_forward=1
+
+reload to take effect.
+
+sysctl -p
+
+
+_____________________________________________________________________
+
+Configure a system to authenticate using Kerberos
+_____________________________________________________________________
+
+
+Kerberos Configuration
+
+To install and configure Kerberos
+
+yum group install -y directory-client; yum install – openldap-clients krb5-workstation
+
+Once install configure from the commad line – LDAP Auth must explicity set to OFF and set sssd to ON
+
+>authconfig –enableldap –ldapserver=ldapserver.example.com ==enableldaptls –ldaploadcacert=ftp://ldapserver.example.com/pub/example-ca.crt ldapbasedn=”dc=example,dc=com” –disableldapauth –enablekrb5 –krb5kdc=ldapserver.example.com –krb5adminserver=ldapserver.example.com –krb5realm=EXAMPLE.COM –enablesssdauth –update
+
+Alternatively we can use the GUI tool – which is Faster, easier and less prone to error, which during the exam is CRUCIAL
+Open the GUI config with;
+
+system-config-authentication
+
+and fill in the details with those provided in the exam.
+
+
+_____________________________________________________________________
+
+Configure a system as either an iSCSI target or initiator that persistently mounts an iSCSI target
+_____________________________________________________________________
+
+
+no reason to revise or learn at this time, I have no use for it and the man page example is enough for the exam.
+
+Search for the required man page
+
+man -k scsi
+
+Open the man page
+
+man iscsiadm
+
+Search for examples
+
+Edit the lines as appropriate
+iscsiadm –mode discoverydb –type sendtargets –portal 192.168.1.10 –discover
+
+_____________________________________________________________________
+
+Produce and deliver reports on system utilization (processor, memory, disk, and network)
+_____________________________________________________________________
+
+Produce and deliver reports on system utilization (processor, memory, disk, and network)
+This is a relatively easy objective. You need to use the sar command. This command has a large number of flags that can be combined. If you want to get everything, hopefully you won't have to analyse it :), just use:
+sar -A
+In order to get processor utilization statistics use simply use (note that cpunumber is zero based, in other words the first cpu is 0) :
+sar
+or
+sar -P cpunumber 
+or
+sar -u ALL
+In order to get memory usage statistics, use: 
+sar -rR
+To get swap usage statistics, use:
+sar -S
+Arguably paging usage statistics are part of the memory, so:
+sar -B
+You can get disk usage statistics with:
+sar -b
+or
+sar -d
+or even
+sar -dp
+Finally network usage statistics can be obtained with (note that there are over 15 different keyworks, e.g. ICMP, EICMP,TCP, ETCP etc, and you can normally add an E to the keyword to get the error statistics):
+sar -n DEV 
+and
+sar -n EDEV
+Unfortunately, the manual page is very long and unwieldy, so it might be a good idea to remember some of these by heart for the exam.
+
+_____________________________________________________________________
+
+Use shell scripting to automate system maintenance tasks
+_____________________________________________________________________

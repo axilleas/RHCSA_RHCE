@@ -1,0 +1,32 @@
+RHEL7: Debug network services.
+
+When you’ve got a service problem between two servers (here local and remote), follow these steps.
+
+Here we assume the local configuration is OK (working DNS or /etc/hosts file).
+
+Start by checking the connectivity:
+
+local# ping remote
+If you don’t get any result, connect to the remote server through a console (see the RHEL 7 virtual console page) and check the basic system & network configuration (run level, ip address, default gateway, etc).
+
+If the remote server replies, install nmap and check the remote services (see my previous post about nmap):
+
+local# yum install -y nmap
+local# nmap remote
+At this point, it can be useful to stop firewalld locally or remotely in case communications can’t go through because of it:
+
+local# systemctl stop firewalld
+remote# systemctl stop firewalld
+If you don’t get any progress, it could also be useful to bring the SELinux configuration of the remote server in permissive mode:
+
+remote# setenforce Permissive
+Some commands can be used to debug services like:
+
+telnet to debug smtp (telnet remote 25), http (telnet remote 80),
+elinks to debug http (elinks remote),
+showmount to debug NFSv3 & NFSv2 (showmount -e remote) but not NFSv4 (=># mount remote:/ /mnt; cd /mnt; ls exports).
+Some services require NTP synchronization to work properly (Kerberos, etc), some others rely on a working DNS (smtp & the MX records, etc).
+
+In addition, the TCP wrapper files (/etc/hosts.allow & /etc/hosts.deny) should be empty.
+
+Finally, when connecting RHEL 7/CentOS 7 servers to RHEL 6/CentOS 6 servers, keep in mind that user id/group id start at 1000 in RHEL 7 by default when then start at 500 in RHEL 6.

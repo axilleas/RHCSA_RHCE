@@ -1,1 +1,29 @@
 SE Linux
+
+
+Actor - Process that tries to do something
+Permission - What the Actor is trying to do
+Resource - File or directory in which the Actor is triyng to use or change
+
+SELinux vocabulary - 
+
+	Domain
+		the context of the process that is acting upon something 
+	
+	Type
+		the context of the resource on which the process is acting
+	
+	Class
+		the type or class of the resource
+
+	Permissions
+		the permission or permissions that are allowed given the domain, type and class
+
+
+allow <domain> <type>:<class> { <permissions> };
+
+_________________________________
+
+Security Contexts
+_________________________________
+

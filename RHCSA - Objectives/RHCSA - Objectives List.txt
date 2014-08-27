@@ -1,9 +1,5 @@
-RHCSA Objectives - 6/26/14
-
-Exam objectives
-
-Red Hat reserves the right to add, modify, and remove objectives. Such changes will be made public in advance through revisions to this document. RHCSA exam candidates should be able to accomplish the tasks below without assistance. These have been grouped into several categories.
-
+RHCSA Objectives - 8/24/14
+RHEL 7 
 
 
 
@@ -14,11 +10,11 @@ UNDERSTAND AND USE ESSENTIAL TOOLS
 
 	Use input-output redirection (>, >>, |, 2>, etc.).
 
-	Use grep and regular expressions to analyze text.
+	Use grep and regular expressions to analyze text. ********
 
-	Access remote systems using ssh and VNC.
+	Access remote systems using ssh.
 
-	Log in and switch users in multiuser runlevels.
+	Log in and switch users in multiuser targets
 
 	Archive, compress, unpack, and uncompress files using tar, star, gzip, and bzip2.
 
@@ -42,19 +38,21 @@ Operate running systems
 
 	Boot, reboot, and shut down a system normally.
 
-	Boot systems into different runlevels manually.
+	Boot systems into different runlevels manually. *********
 
-	Use single-user mode to gain access to a system.
+	Interrupt the boot process in order to gain access to a system
 
 	Identify CPU/memory intensive processes, adjust process priority with renice, and kill processes.
 
-	Locate and interpret system log files.
+	Locate and interpret system log files and journals
 
-	Access a virtual machine’s console.
+	Access a virtual machine’s console. ************
 
-	Start and stop virtual machines.
+	Start and stop virtual machines. *********
 
 	Start, stop, and check the status of network services.
+
+	Securely transfer files between systems
 
 
 
@@ -62,15 +60,13 @@ Operate running systems
 Configure local storage
 
 
-	List, create, delete, and set partition type for primary, extended, and logical partitions.
+	List, create, delete partitions on MBR and GPT disks
 
 	Create and remove physical volumes, assign physical volumes to volume groups, and create and delete logical Volumes.
 
-	Create and configure LUKS-encrypted partitions and logical volumes to prompt for password and mount a decrypted file system at boot.
-
 	Configure systems to mount file systems at boot by Universally Unique ID (UUID) or label.
 
-	Add new partitions and logical volumes, and swap to a system non-destructively.
+	Add new partitions and logical volumes, and swap to a system non-destructively.  ********
  
 
 
@@ -78,17 +74,13 @@ Configure local storage
 Create and configure file systems
 
 
-	Create, mount, unmount, and use ext2, ext3, and ext4 file systems.
-
-	Mount, unmount, and use LUKS-encrypted file systems.
+	Create, mount, unmount, and use vfat, ext4, and xfs file systems
 
 	Mount and unmount CIFS and NFS network file systems.
 
-	Configure systems to mount ext4, LUKS-encrypted, and network file systems automatically.
+	Extend existing logical volumes.
 
-	Extend existing unencrypted ext4-formatted logical volumes.
-
-	Create and configure set-GID directories for collaboration.
+	Create and configure set-GID directories for collaboration.  ***********
 
 	Create and manage Access Control Lists (ACLs).
 
@@ -101,29 +93,29 @@ Deploy, configure, and maintain systems
 
 
 	Configure networking and hostname resolution statically or dynamically.
+
 	Schedule tasks using cron.
 
-	Configure systems to boot into a specific runlevel automatically.
+	Start and stop services and configure services to start automatically at boot
 
-	Install Red Hat Enterprise Linux automatically using Kickstart.
+	Configure systems to boot into a specific target automatically
 
-	Configure a physical machine to host virtual guests.
+	Install Red Hat Enterprise Linux automatically using Kickstart.   *************
 
-	Install Red Hat Enterprise Linux systems as virtual guests.
+	Configure a physical machine to host virtual guests.    ***********
 
-	Configure systems to launch virtual machines at boot.
+	Install Red Hat Enterprise Linux systems as virtual guests.   ************
+
+	Configure systems to launch virtual machines at boot.  ***********
 
 	Configure network services to start automatically at boot.
 
-	Configure a system to run a default configuration HTTP server.
-
-	Configure a system to run a default configuration FTP server.
-
-	Configure a system to use time services.
+	Configure a system to use time services.  ************
 
 	Install and update software packages from Red Hat Network, a remote repository, or from the local file system.
 
 	Update the kernel package appropriately to ensure a bootable system.
+
 	Modify the system bootloader.
 
 
@@ -138,7 +130,8 @@ Manage users and groups
 
 	Create, delete, and modify local groups and group memberships.
 
-	Configure a system to use an existing LDAP directory service for user and group information.
+	Configure a system to use an existing LDAP directory service for user and group information.  *******
+		Configure a system to use an existing authentication service for user and group information
 
 
 
@@ -146,14 +139,16 @@ Manage users and groups
 Manage security
 
 
-	Configure firewall settings using system-config-firewall or iptables.
+	Configure firewall settings using firewall-config, firewall-cmd, or iptables
 
-	Set enforcing and permissive modes for SELinux.
+	Configure key-based authentication for SSH
 
-	List and identify SELinux file and process context.
+	Set enforcing and permissive modes for SELinux.  ***********
 
-	Restore default file contexts.
+	List and identify SELinux file and process context.  ********
 
-	Use boolean settings to modify system SELinux settings.
+	Restore default file contexts.  *********
 
-	Diagnose and address routine SELinux policy violations
+	Use boolean settings to modify system SELinux settings.  *******
+
+	Diagnose and address routine SELinux policy violations  *******
